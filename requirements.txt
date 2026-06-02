@@ -1,0 +1,6 @@
+opencv-python
+pyzbar
+pytesseract
+mysql-connector-python
+Pillow
+pydantic
