@@ -1,11 +1,14 @@
 /* 即刻小绿 · Forest Canopy 风格 */
 page {
   --forest: #2d4a2b;
+  --forest-700: #3a5d37;
   --sage: #7d8471;
+  --olive: #a4ac86;
   --olive-soft: #e8ebdf;
-  --ivory: #faf9f6;
+  --ivory: #f3f6f1;
   --line: #e3e1d6;
   --ink: #26301f;
+  --ink-soft: #5f6655;
   --clay: #b06a3b;
   background: var(--ivory);
   color: var(--ink);
@@ -17,33 +20,34 @@ page {
   border-radius: 8rpx;
   font-size: 22rpx;
   padding: 4rpx 14rpx;
+  font-weight: 600;
 }
-.price {
-  color: var(--clay);
-  font-weight: 700;
+.price { color: var(--clay); font-weight: 700; }
+.muted { color: var(--sage); }
+.small { font-size: 24rpx; }
+
+.card {
+  background: #fff;
+  border: 1rpx solid var(--line);
+  border-radius: 20rpx;
+  box-shadow: 0 6rpx 24rpx rgba(45, 74, 43, 0.05);
 }
+
 .btn {
   background: var(--forest);
   color: #fff;
-  border-radius: 16rpx;
+  border-radius: 14rpx;
   text-align: center;
   padding: 26rpx 0;
   font-size: 32rpx;
   font-weight: 600;
+  line-height: 1.2;
 }
-.btn-ghost {
-  background: #fff;
-  color: var(--forest);
-  border: 1rpx solid var(--line);
-}
-.muted { color: var(--sage); }
-.card {
-  background: #fff;
-  border: 1rpx solid var(--line);
-  border-radius: 18rpx;
-}
+.btn::after { border: none; }
+.btn-ghost { background: #fff; color: var(--forest); border: 1rpx solid var(--line); }
+
 .spinner {
-  width: 64rpx; height: 64rpx; margin: 60rpx auto;
+  width: 64rpx; height: 64rpx; margin: 70rpx auto;
   border: 6rpx solid var(--olive-soft); border-top-color: var(--forest);
   border-radius: 50%; animation: spin 1s linear infinite;
 }

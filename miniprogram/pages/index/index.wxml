@@ -10,9 +10,12 @@
 
   <view wx:else class="grid">
     <view wx:for="{{items}}" wx:key="id" class="pcard card" bindtap="openDetail" data-item="{{item}}">
-      <view class="cover">📘</view>
-      <view class="title">{{item.title || '二手书'}}</view>
-      <view class="isbn muted">{{item.isbn}}</view>
+      <view class="cover" style="background: linear-gradient(150deg, {{item.c1}}, {{item.c2}})">
+        <text class="cv-kicker">二手书</text>
+        <text class="cv-title">{{item.title || '二手书'}}</text>
+        <view class="cv-rule"></view>
+        <text class="cv-foot">即刻小绿</text>
+      </view>
       <view class="row">
         <text class="badge" style="background: {{item.condColor}}">{{item.condLabel}}</text>
         <text class="price">{{item.priceText}}</text>

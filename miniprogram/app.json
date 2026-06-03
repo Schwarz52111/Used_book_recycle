@@ -1,6 +1,7 @@
 {
   "pages": [
     "pages/index/index",
+    "pages/sell/sell",
     "pages/detail/detail",
     "pages/me/me"
   ],
@@ -8,15 +9,16 @@
     "navigationBarBackgroundColor": "#2d4a2b",
     "navigationBarTitleText": "即刻小绿",
     "navigationBarTextStyle": "white",
-    "backgroundColor": "#faf9f6"
+    "backgroundColor": "#f3f6f1"
   },
   "tabBar": {
-    "color": "#7d8471",
+    "color": "#9aa091",
     "selectedColor": "#2d4a2b",
     "backgroundColor": "#ffffff",
     "borderStyle": "white",
     "list": [
       { "pagePath": "pages/index/index", "text": "买书" },
+      { "pagePath": "pages/sell/sell", "text": "卖书" },
       { "pagePath": "pages/me/me", "text": "我的" }
     ]
   },

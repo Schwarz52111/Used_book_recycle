@@ -341,7 +341,7 @@ function renderResult(data) {
       <div class="price-sub"><div class="num">${yuan(p.sale_price)}</div><div class="lbl">预计上架售价</div></div>
     </div>
     ${p.reason ? `<div class="reason">${p.reason}</div>` : ""}`
-    : `<div class="review-banner">${ICON.alert}<span>该书被判定为「${cl.label}」，暂不回收。</span></div>`;
+    : `<div class="review-banner">${ICON.alert}<span>${(data.admission && !data.admission.accepted) ? data.admission.reason : "该书被判定为「" + cl.label + "」，暂不回收。"}</span></div>`;
 
   const actions = (p && !c.rejected) ? `
     <div class="btn-row" style="margin-top:20px;">

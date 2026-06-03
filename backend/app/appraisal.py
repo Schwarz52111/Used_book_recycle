@@ -9,13 +9,14 @@ import json
 
 from sqlalchemy.orm import Session
 
+from app.analytics.admission import check_admission
 from app.config import get_settings
 from app.grading.condition_agent import assess_condition
 from app.models import Book, RecycleRecord, ReviewStatus, ReviewTask
 from app.pricing.engine import evaluate_price
 from app.recognition import imaging
 from app.recognition.pipeline import recognize
-from app.schemas import AppraiseResponse
+from app.schemas import AdmissionInfo, AppraiseResponse
 from app.vlm_client import get_vlm_client
 
 
@@ -31,12 +32,19 @@ def appraise(db: Session, image_bytes: bytes) -> AppraiseResponse:
     jpeg = imaging.frame_to_jpeg(imaging.bytes_to_frame(image_bytes))
     cond = assess_condition(jpeg, vlm, threshold)
 
-    # 3) 定价（需匹配到书目且未被拒收）
+    # 3) 准入调控 + 定价（需匹配到书目、未被拒收、且准入通过）
     price = None
-    if rec.matched and rec.book and rec.book.id and not cond.rejected:
+    admission = None
+    if rec.matched and rec.book and rec.book.id:
         book = db.get(Book, rec.book.id)
         if book:
-            price = evaluate_price(db, book, cond.condition_level)
+            adm = check_admission(db, book)
+            admission = AdmissionInfo(
+                accepted=adm.accepted, throttled=adm.throttled,
+                in_stock=adm.in_stock, heat=adm.heat, reason=adm.reason,
+            )
+            if adm.accepted and not cond.rejected:
+                price = evaluate_price(db, book, cond.condition_level)
 
     # 4) 落库
     record = RecycleRecord(
@@ -81,6 +89,7 @@ def appraise(db: Session, image_bytes: bytes) -> AppraiseResponse:
         recognize=rec,
         condition=cond,
         price=price,
+        admission=admission,
         record_id=record.id,
         review_task_id=review_task_id,
     )

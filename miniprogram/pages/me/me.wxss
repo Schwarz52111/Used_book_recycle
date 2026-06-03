@@ -1,13 +1,32 @@
-.wrap { padding: 32rpx; }
-.profile { display: flex; align-items: center; padding: 32rpx; }
-.avatar { width: 96rpx; height: 96rpx; border-radius: 24rpx; background: var(--forest); color: #fff; font-size: 44rpx; display: flex; align-items: center; justify-content: center; }
-.uinfo { margin-left: 24rpx; flex: 1; min-width: 0; }
-.nick { font-size: 34rpx; font-weight: 700; color: var(--forest); }
-.oid { font-size: 22rpx; margin-top: 8rpx; word-break: break-all; }
-.stat { display: flex; align-items: center; padding: 36rpx; margin-top: 24rpx; }
-.stat-item { flex: 1; text-align: center; }
-.stat-num { font-size: 44rpx; font-weight: 700; color: var(--clay); }
-.divider { width: 1rpx; height: 60rpx; background: var(--line); }
-.hint { font-size: 24rpx; margin-top: 28rpx; text-align: center; line-height: 1.6; }
-.empty { text-align: center; padding-top: 140rpx; }
-.empty .btn { margin-top: 40rpx; }
+.wrap { padding: 28rpx; }
+
+.balance-card {
+  background: linear-gradient(135deg, #3a5d37, #2d4a2b);
+  border-radius: 24rpx;
+  padding: 36rpx;
+  color: #fff;
+  box-shadow: 0 10rpx 30rpx rgba(45, 74, 43, 0.22);
+}
+.bc-top { display: flex; align-items: center; }
+.avatar { width: 88rpx; height: 88rpx; border-radius: 22rpx; background: rgba(255,255,255,0.18); color: #fff; font-size: 42rpx; display: flex; align-items: center; justify-content: center; }
+.uinfo { margin-left: 22rpx; }
+.nick { font-size: 34rpx; font-weight: 700; }
+.credit { font-size: 24rpx; opacity: 0.85; margin-top: 6rpx; }
+.bc-bal { margin: 34rpx 0 28rpx; }
+.bal-lbl { font-size: 24rpx; opacity: 0.8; }
+.bal-num { font-size: 64rpx; font-weight: 800; margin-top: 4rpx; }
+.bc-actions { display: flex; gap: 18rpx; }
+.bc-btn { flex: 1; text-align: center; padding: 22rpx 0; background: rgba(255,255,255,0.16); border-radius: 14rpx; font-size: 28rpx; }
+
+.sec-title { font-size: 30rpx; font-weight: 700; color: var(--forest); margin: 36rpx 6rpx 18rpx; }
+.list { padding: 8rpx 26rpx; }
+.row { display: flex; align-items: center; justify-content: space-between; padding: 26rpx 0; border-bottom: 1rpx solid var(--line); }
+.row:last-child { border-bottom: none; }
+.row-text { font-size: 30rpx; color: var(--ink); }
+.row-bal { margin-top: 6rpx; }
+.row-amt { font-size: 34rpx; font-weight: 700; }
+.empty { padding: 50rpx; text-align: center; font-size: 28rpx; }
+
+.oid { margin: 28rpx 6rpx; word-break: break-all; }
+.empty-login { text-align: center; padding-top: 160rpx; }
+.empty-login .btn { margin-top: 40rpx; }

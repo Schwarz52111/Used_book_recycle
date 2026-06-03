@@ -2,30 +2,42 @@
   <view wx:if="{{loading}}" class="spinner"></view>
 
   <block wx:elif="{{user}}">
-    <view class="card profile">
-      <view class="avatar">绿</view>
-      <view class="uinfo">
-        <view class="nick">{{user.nickname || '校园用户'}}</view>
-        <view class="oid muted">openid：{{user.openid}}</view>
+    <!-- 余额卡 -->
+    <view class="balance-card">
+      <view class="bc-top">
+        <view class="avatar">绿</view>
+        <view class="uinfo">
+          <view class="nick">{{user.nickname || '校园用户'}}</view>
+          <view class="credit">信用分 {{user.credit_score}}</view>
+        </view>
+      </view>
+      <view class="bc-bal">
+        <view class="bal-lbl">账户余额</view>
+        <view class="bal-num">{{user.balanceText}}</view>
+      </view>
+      <view class="bc-actions">
+        <view class="bc-btn" bindtap="goSell">卖书赚钱</view>
+        <view class="bc-btn" bindtap="goBuy">去买书</view>
       </view>
     </view>
 
-    <view class="card stat">
-      <view class="stat-item">
-        <view class="stat-num">{{user.balanceText}}</view>
-        <view class="muted">账户余额</view>
-      </view>
-      <view class="divider"></view>
-      <view class="stat-item">
-        <view class="stat-num">{{user.credit_score}}</view>
-        <view class="muted">信用分</view>
+    <!-- 账单 -->
+    <view class="sec-title">账单流水</view>
+    <view wx:if="{{ledger.length === 0}}" class="empty card muted">还没有流水，去卖几本书试试</view>
+    <view wx:else class="card list">
+      <view wx:for="{{ledger}}" wx:key="id" class="row">
+        <view class="row-l">
+          <view class="row-text">{{item.text}}</view>
+          <view class="row-bal muted small">{{item.balanceText}}</view>
+        </view>
+        <view class="row-amt" style="color: {{item.color}}">{{item.amountText}}</view>
       </view>
     </view>
 
-    <view class="hint muted">卖书回收的金额会自动到账这里。购书在「买书」页完成。</view>
+    <view class="oid muted small">openid：{{user.openid}}</view>
   </block>
 
-  <view wx:else class="empty">
+  <view wx:else class="empty-login">
     <view class="muted">{{error || '未登录'}}</view>
     <button class="btn" bindtap="refresh">点击登录</button>
   </view>

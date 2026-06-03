@@ -55,11 +55,21 @@ class PriceResult(BaseModel):
     factors: dict[str, float] = {}
 
 
+# ---------- 准入 ----------
+class AdmissionInfo(BaseModel):
+    accepted: bool
+    throttled: bool = False
+    in_stock: int = 0
+    heat: float = 0.0
+    reason: str = ""
+
+
 # ---------- 一站式回收评估 ----------
 class AppraiseResponse(BaseModel):
     recognize: RecognizeResult
     condition: ConditionResult | None = None
     price: PriceResult | None = None
+    admission: AdmissionInfo | None = None
     record_id: int | None = None
     review_task_id: int | None = None
 

@@ -1,8 +1,12 @@
 <view class="wrap" wx:if="{{item}}">
   <view wx:if="{{!done}}">
     <view class="card detail">
-      <view class="cover">📖</view>
-      <view class="title">{{item.title || '二手书'}}</view>
+      <view class="cover" style="background: linear-gradient(150deg, {{c1}}, {{c2}})">
+        <text class="cv-kicker">二手书</text>
+        <text class="cv-title">{{item.title || '二手书'}}</text>
+        <view class="cv-rule"></view>
+        <text class="cv-foot">即刻小绿 · 校园循环</text>
+      </view>
       <view class="isbn muted">ISBN {{item.isbn || '—'}}</view>
       <view class="line">
         <text class="badge" style="background: {{condColor}}">{{condLabel}}</text>
