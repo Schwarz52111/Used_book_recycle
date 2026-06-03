@@ -1,0 +1,22 @@
+# 密钥与本地配置（绝不提交）
+.env
+*.env
+!.env.example
+
+# 本地数据库
+*.db
+*.sqlite
+*.sqlite3
+used_books.db
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+*.egg-info/
+
+# 模型缓存 / 上传照片
+ollama_models/
+uploads/

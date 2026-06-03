@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>即刻小绿 · 二手书自助回收售卖</title>
+<style>
+  :root{
+    --green:#15a05a; --green-d:#0f7d45; --green-l:#e7f6ee;
+    --ink:#1f2a24; --muted:#6b7b72; --line:#e3ece7; --bg:#f4f8f5;
+    --warn:#d98324; --bad:#d65745; --card:#ffffff;
+    --shadow:0 6px 20px rgba(16,80,45,.08);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,"PingFang SC","Microsoft YaHei",Segoe UI,Roboto,sans-serif;
+    background:var(--bg);color:var(--ink);line-height:1.5}
+  header{background:linear-gradient(120deg,var(--green),var(--green-d));color:#fff;padding:18px 22px;
+    display:flex;align-items:center;gap:12px;box-shadow:var(--shadow)}
+  header .logo{width:38px;height:38px;border-radius:11px;background:rgba(255,255,255,.18);
+    display:grid;place-items:center;font-size:20px}
+  header h1{font-size:19px;margin:0;font-weight:700;letter-spacing:.5px}
+  header .sub{font-size:12px;opacity:.85;margin-top:1px}
+  .wrap{max-width:920px;margin:0 auto;padding:18px}
+  .tabs{display:flex;gap:8px;margin:6px 0 18px}
+  .tab{flex:1;padding:14px;border:none;border-radius:14px;background:#fff;color:var(--muted);
+    font-size:16px;font-weight:600;cursor:pointer;box-shadow:var(--shadow);transition:.15s}
+  .tab.active{background:var(--green);color:#fff}
+  .panel{display:none}.panel.active{display:block}
+  .card{background:var(--card);border-radius:16px;box-shadow:var(--shadow);padding:18px;margin-bottom:16px}
+  .drop{border:2px dashed var(--line);border-radius:16px;padding:34px 18px;text-align:center;
+    background:#fff;cursor:pointer;transition:.15s}
+  .drop:hover{border-color:var(--green);background:var(--green-l)}
+  .drop .big{font-size:40px}
+  .drop p{margin:8px 0 2px;font-weight:600}
+  .drop small{color:var(--muted)}
+  #preview{max-width:100%;max-height:260px;border-radius:12px;margin-top:12px;display:none}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:none;cursor:pointer;
+    padding:13px 20px;border-radius:12px;font-size:16px;font-weight:600;background:var(--green);color:#fff;
+    width:100%;margin-top:14px;transition:.15s}
+  .btn:hover{background:var(--green-d)} .btn:disabled{opacity:.5;cursor:not-allowed}
+  .btn.ghost{background:#fff;color:var(--green);border:1.5px solid var(--green)}
+  .hidden{display:none}
+  .row{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+  .muted{color:var(--muted)}.small{font-size:13px}
+  .badge{display:inline-block;padding:3px 11px;border-radius:999px;font-size:13px;font-weight:600}
+  .b-new{background:#dff3e6;color:#127a42}.b-good{background:#e3f0ff;color:#1c64c4}
+  .b-acc{background:#fff1dd;color:#b9701b}.b-dmg{background:#ffe3de;color:#c0392b}
+  .b-rej{background:#3a3a3a;color:#fff}
+  .price{font-size:38px;font-weight:800;color:var(--green-d)}
+  .price small{font-size:15px;font-weight:600;color:var(--muted)}
+  .dim{margin:10px 0}
+  .dim .row{margin-bottom:4px}
+  .bar{height:9px;border-radius:6px;background:#eef3f0;overflow:hidden}
+  .bar > i{display:block;height:100%;border-radius:6px;background:var(--green)}
+  .bar.mid > i{background:var(--warn)}.bar.high > i{background:var(--bad)}
+  .notice{padding:11px 14px;border-radius:11px;font-size:14px;margin-top:12px}
+  .notice.warn{background:#fff6e9;color:#a35d12;border:1px solid #f3d9b0}
+  .notice.err{background:#ffeceA;color:#b23b2b;border:1px solid #f3c0b8}
+  details{margin-top:10px}summary{cursor:pointer;color:var(--muted);font-size:14px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px}
+  .book{background:#fff;border-radius:14px;box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column}
+  .book .cover{height:120px;background:linear-gradient(135deg,#e7f6ee,#d2ead9);display:grid;place-items:center;font-size:34px}
+  .book .body{padding:12px;flex:1;display:flex;flex-direction:column;gap:6px}
+  .book .t{font-weight:700;font-size:15px;line-height:1.3}
+  .spin{display:inline-block;width:18px;height:18px;border:3px solid rgba(255,255,255,.5);
+    border-top-color:#fff;border-radius:50%;animation:sp .7s linear infinite;vertical-align:-3px}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  .empty{text-align:center;color:var(--muted);padding:30px}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">📗</div>
+  <div>
+    <h1>即刻小绿</h1>
+    <div class="sub">校园二手图书 · 自助回收售卖一体机</div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="tabs">
+    <button class="tab active" data-tab="recycle">📥 卖书回收</button>
+    <button class="tab" data-tab="buy">🛒 买书</button>
+  </div>
+
+  <!-- 回收 -->
+  <section class="panel active" id="recycle">
+    <div class="card">
+      <label class="drop" id="drop">
+        <div class="big">📷</div>
+        <p>拍摄 / 上传书籍照片</p>
+        <small>对准封面或 ISBN 条码，光线充足效果更好</small>
+        <input type="file" id="file" accept="image/*" capture="environment" class="hidden" />
+        <img id="preview" alt="预览" />
+      </label>
+      <button class="btn" id="appraiseBtn" disabled>开始评估</button>
+    </div>
+
+    <div id="result"></div>
+  </section>
+
+  <!-- 买书 -->
+  <section class="panel" id="buy">
+    <div class="card">
+      <div class="row">
+        <strong>在库书目</strong>
+        <button class="btn ghost" style="width:auto;margin:0;padding:8px 14px" id="reloadBtn">刷新</button>
+      </div>
+    </div>
+    <div id="stock" class="grid"></div>
+  </section>
+</div>
+
+<script>
+const API = "";
+const MACHINE = "KIOSK-001";
+const $ = s => document.querySelector(s);
+
+// ---- tabs ----
+document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{
+  document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+  document.querySelectorAll(".panel").forEach(x=>x.classList.remove("active"));
+  t.classList.add("active"); $("#"+t.dataset.tab).classList.add("active");
+  if(t.dataset.tab==="buy") loadStock();
+});
+
+// ---- 回收：选图 ----
+let chosen=null;
+$("#file").onchange=e=>{
+  chosen=e.target.files[0]; if(!chosen)return;
+  const img=$("#preview"); img.src=URL.createObjectURL(chosen); img.style.display="block";
+  $("#appraiseBtn").disabled=false;
+};
+
+const LEVEL={like_new:["近全新","b-new"],good:["良好","b-good"],acceptable:["可接受","b-acc"],
+  damaged:["破损","b-dmg"],reject:["建议拒收","b-rej"]};
+const badge=l=>{const[t,c]=LEVEL[l]||[l,"b-good"];return `<span class="badge ${c}">${t}</span>`};
+const esc=s=>(s||"").replace(/[<>&]/g,c=>({"<":"&lt;",">":"&gt;","&":"&amp;"}[c]));
+
+// ---- 评估 ----
+$("#appraiseBtn").onclick=async()=>{
+  if(!chosen)return;
+  const btn=$("#appraiseBtn"); btn.disabled=true; btn.innerHTML='<span class="spin"></span> 评估中…';
+  $("#result").innerHTML="";
+  try{
+    const fd=new FormData(); fd.append("file",chosen);
+    const r=await fetch(API+"/appraise",{method:"POST",body:fd});
+    const data=await r.json();
+    if(!r.ok){ renderError(data.detail||("请求失败 "+r.status)); return; }
+    renderResult(data);
+  }catch(e){ renderError("网络错误："+e.message); }
+  finally{ btn.disabled=false; btn.textContent="开始评估"; }
+};
+
+function renderError(msg){
+  $("#result").innerHTML=`<div class="card"><div class="notice err">⚠️ ${esc(msg)}</div></div>`;
+}
+
+function renderResult(d){
+  const rec=d.recognize||{}, c=d.condition||{}, p=d.price;
+  let html='<div class="card">';
+
+  // 书目
+  if(rec.matched && rec.book){
+    const b=rec.book;
+    html+=`<div class="row"><strong style="font-size:18px">${esc(b.title)}</strong>${badge(c.condition_level)}</div>
+      <div class="muted small">${esc(b.author||"")} ${b.publisher?("· "+esc(b.publisher)):""}</div>
+      <div class="muted small">识别方式：${esc(rec.method)} · 置信度 ${(rec.confidence*100|0)}%</div>`;
+  }else{
+    html+=`<div class="row"><strong style="font-size:18px">未匹配到书目</strong>${badge(c.condition_level)}</div>
+      <div class="muted small">已转人工复核，可补录书目信息</div>`;
+  }
+
+  // 品相维度
+  if(c.dimensions && c.dimensions.length){
+    html+='<div style="margin-top:14px"><strong>品相评估</strong>';
+    if(c.summary) html+=`<div class="muted small" style="margin:4px 0 8px">${esc(c.summary)}</div>`;
+    c.dimensions.forEach(dim=>{
+      const pct=Math.round((dim.score||0)*100);
+      const cls=dim.score>=0.66?"high":dim.score>=0.33?"mid":"";
+      html+=`<div class="dim"><div class="row small"><span>${esc(dim.name)}</span>
+        <span class="muted">${esc(dim.evidence||"")}</span></div>
+        <div class="bar ${cls}"><i style="width:${pct}%"></i></div></div>`;
+    });
+    html+=`<div class="muted small" style="margin-top:6px">完整度 ${(c.completeness*100|0)}% · 评估置信度 ${(c.confidence*100|0)}%</div></div>`;
+  }
+
+  // 价格
+  if(p && !c.rejected){
+    html+=`<div style="margin-top:16px"><div class="muted small">建议回收价（给您）</div>
+      <div class="price">¥${p.recycle_price.toFixed(2)} <small>· 上架售价 ¥${p.sale_price.toFixed(2)}</small></div>
+      <details><summary>查看定价依据</summary><div class="muted small" style="margin-top:6px">${esc(p.reason)}</div></details></div>`;
+  }
+
+  // 提示
+  if(c.rejected) html+=`<div class="notice err">该书建议拒收：${esc(c.reject_reason||"品相不达标")}</div>`;
+  else if(d.review_task_id) html+=`<div class="notice warn">⏳ 置信度较低，已加入人工复核队列（任务 #${d.review_task_id}）</div>`;
+
+  html+='</div>';
+
+  // 确认回收
+  if(p && !c.rejected){
+    html+=`<div class="card"><button class="btn" id="intakeBtn" data-rec="${d.record_id}">✅ 确认回收入库（¥${p.recycle_price.toFixed(2)}）</button></div>`;
+  }
+  $("#result").innerHTML=html;
+
+  const ib=$("#intakeBtn");
+  if(ib) ib.onclick=()=>intake(ib);
+}
+
+async function intake(btn){
+  btn.disabled=true; btn.innerHTML='<span class="spin"></span> 入库中…';
+  try{
+    const body={record_id:Number(btn.dataset.rec),machine_id:MACHINE,
+      slot_code:"S"+Math.floor(Math.random()*900+100)};
+    const r=await fetch(API+"/inventory/intake",{method:"POST",
+      headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+    const data=await r.json();
+    if(!r.ok) throw new Error(data.detail||"入库失败");
+    btn.textContent="✅ 已入库，款项将到账";
+  }catch(e){ btn.disabled=false; btn.textContent="重试入库"; alert(e.message); }
+}
+
+// ---- 买书 ----
+async function loadStock(){
+  const box=$("#stock"); box.innerHTML='<div class="empty">加载中…</div>';
+  try{
+    const r=await fetch(API+"/inventory?status=in_stock");
+    const list=await r.json();
+    if(!Array.isArray(list)||!list.length){ box.innerHTML='<div class="empty">暂无在库书目，先去回收几本吧 📥</div>'; return; }
+    box.innerHTML=list.map(it=>`<div class="book">
+      <div class="cover">📘</div>
+      <div class="body">
+        <div class="t">${esc(it.title||"未知书目")}</div>
+        <div>${badge(it.condition_level)}</div>
+        <div class="price" style="font-size:22px">¥${(it.sale_price||0).toFixed(2)}</div>
+        <button class="btn" style="margin-top:auto" data-id="${it.id}">购买并取书</button>
+      </div></div>`).join("");
+    box.querySelectorAll("button[data-id]").forEach(b=>b.onclick=()=>buy(b));
+  }catch(e){ box.innerHTML='<div class="empty">加载失败：'+esc(e.message)+'</div>'; }
+}
+$("#reloadBtn").onclick=loadStock;
+
+async function buy(btn){
+  btn.disabled=true; btn.innerHTML='<span class="spin"></span> 出货中…';
+  try{
+    const r=await fetch(API+"/inventory/dispense?mechanism=simulated",{method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({inventory_id:Number(btn.dataset.id),machine_id:MACHINE})});
+    const data=await r.json();
+    if(!r.ok) throw new Error(data.detail||"出货失败");
+    btn.textContent="✅ "+(data.message||"已出货，请取书");
+    setTimeout(loadStock,1200);
+  }catch(e){ btn.disabled=false; btn.textContent="重试"; alert(e.message); }
+}
+</script>
+</body>
+</html>
