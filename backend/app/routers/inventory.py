@@ -17,7 +17,10 @@ router = APIRouter(prefix="/inventory", tags=["inventory"])
 def intake_endpoint(req: IntakeRequest, db: Session = Depends(get_db)):
     """确认回收：把一条估价记录入库；填了卖家 openid 则把回收金额计入其账户。"""
     try:
-        item = service.intake(db, req.record_id, req.machine_id, req.slot_code, req.rfid_tag)
+        item = service.intake(
+            db, req.record_id, req.machine_id, req.slot_code, req.rfid_tag,
+            seller_price=req.seller_price,
+        )
     except service.InventoryError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
@@ -51,6 +54,7 @@ def _to_item(it) -> InventoryItem:
         title=it.book.title if it.book else "",
         isbn=it.book.isbn if it.book else "",
         condition_level=it.condition_level,
+        cost_price=float(it.cost_price or 0),
         sale_price=float(it.sale_price or 0),
         machine_id=it.machine_id,
         slot_code=it.slot_code,

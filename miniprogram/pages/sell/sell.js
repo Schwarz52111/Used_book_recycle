@@ -24,6 +24,7 @@ Page({
     photo: "",        // 本地临时图片
     stage: "idle",    // idle | loading | result | done
     result: null,     // appraise 结果（已加工）
+    editPrice: "",    // 卖家可改的回收价（字符串，绑定输入框）
     payout: 0,
     error: "",
   },
@@ -93,7 +94,9 @@ Page({
     const [c1, c2] = coverPair(title);
     this.setData({
       stage: "result",
+      editPrice: p ? String(Number(p.recycle_price).toFixed(2)) : "",
       result: {
+        aiPrice: p ? Number(p.recycle_price) : 0,
         recordId: data.record_id,
         title,
         c1, c2,
@@ -114,20 +117,31 @@ Page({
     });
   },
 
+  onPriceInput(e) {
+    this.setData({ editPrice: e.detail.value });
+  },
+
   confirmRecycle() {
     const r = this.data.result;
     if (!r || !r.canRecycle) return;
+    const sp = parseFloat(this.data.editPrice);
+    const sellerPrice = isNaN(sp) ? undefined : sp;
     app
       .api("POST", "/inventory/intake", {
         record_id: r.recordId,
         machine_id: app.globalData.machineId,
         seller_openid: app.globalData.openid,
+        seller_price: sellerPrice,
       })
-      .then(() => this.setData({ stage: "done", payout: r.recyclePrice }))
+      .then((item) => {
+        const payout = item && item.cost_price ? Number(item.cost_price) : r.aiPrice;
+        const reviewing = sellerPrice !== undefined && sellerPrice > r.aiPrice + 0.001;
+        this.setData({ stage: "done", payout: payout.toFixed(2), reviewing });
+      })
       .catch((e) => this.setData({ error: "入库失败：" + e.message }));
   },
 
   reset() {
-    this.setData({ photo: "", stage: "idle", result: null, error: "", payout: 0 });
+    this.setData({ photo: "", stage: "idle", result: null, editPrice: "", error: "", payout: 0, reviewing: false });
   },
 });

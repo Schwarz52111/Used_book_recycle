@@ -2,27 +2,64 @@
 
 from __future__ import annotations
 
+import json
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.inventory.dispense import DispenseResult, get_dispenser
-from app.models import Book, Inventory, InventoryStatus, RecycleRecord
+from app.models import (
+    Book,
+    Inventory,
+    InventoryStatus,
+    RecycleRecord,
+    ReviewStatus,
+    ReviewTask,
+)
 from app.pricing.engine import evaluate_price
+
+MIN_PRICE = 1.0
 
 
 class InventoryError(RuntimeError):
     pass
 
 
+def resolve_payout(ai_price: float, seller_price: float | None) -> tuple[float, bool]:
+    """根据 AI 估价与卖家改价，得出最终回收价与是否需复核。
+
+    - 未改价：用 AI 估价。
+    - 改价 ≤ AI 估价：直接采用（卖家愿意收更少，放行）。
+    - 改价 > AI 估价：先按 AI 估价到账，并标记人工复核（防止乱报高价），
+      更高的报价由运营复核后再决定是否补差，不自动放款。
+    """
+    ai_price = round(float(ai_price or 0), 2)
+    if seller_price is None:
+        return ai_price, False
+    sp = max(MIN_PRICE, float(seller_price))
+    if sp <= ai_price:
+        return round(sp, 2), False
+    return ai_price, True
+
+
 def intake(
-    db: Session, record_id: int, machine_id: str, slot_code: str = "", rfid_tag: str = ""
+    db: Session,
+    record_id: int,
+    machine_id: str,
+    slot_code: str = "",
+    rfid_tag: str = "",
+    seller_price: float | None = None,
 ) -> Inventory:
-    """把一条已估价的回收记录入库为库存条目。"""
+    """把一条已估价的回收记录入库为库存条目。可由卖家改价。"""
     record = db.get(RecycleRecord, record_id)
     if record is None:
         raise InventoryError(f"回收记录不存在：{record_id}")
     if record.book_id is None:
         raise InventoryError("该记录未匹配到书目，无法入库")
+
+    # 回收价：AI 估价 + 卖家可选改价
+    ai_price = float(record.evaluated_price or 0)
+    cost_price, needs_review = resolve_payout(ai_price, seller_price)
 
     # 上架售价：用定价引擎按书目+品相重新计算（保证有售价可展示/售卖）
     sale_price = 0.0
@@ -34,7 +71,7 @@ def intake(
         book_id=record.book_id,
         recycle_record_id=record.id,
         condition_level=record.condition_level,
-        cost_price=record.evaluated_price,
+        cost_price=cost_price,
         sale_price=sale_price,
         machine_id=machine_id,
         slot_code=slot_code,
@@ -42,6 +79,21 @@ def intake(
         status=InventoryStatus.in_stock,
     )
     db.add(item)
+
+    # 卖家报价高于 AI 估价 → 记一条人工复核
+    if needs_review:
+        db.add(
+            ReviewTask(
+                recycle_record_id=record.id,
+                reason="seller_price_higher",
+                payload=json.dumps(
+                    {"ai_price": ai_price, "seller_price": seller_price, "accepted_price": cost_price},
+                    ensure_ascii=False,
+                ),
+                status=ReviewStatus.pending,
+            )
+        )
+
     db.commit()
     db.refresh(item)
     return item

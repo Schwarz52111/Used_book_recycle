@@ -16,7 +16,7 @@ from sqlalchemy.orm import Session
 
 from app.config import get_settings
 from app.inventory.dispense import get_dispenser
-from app.models import Inventory, InventoryStatus, Order, OrderStatus
+from app.models import Inventory, InventoryStatus, Order, OrderStatus, User
 from app.payment.provider import get_payment_provider
 
 
@@ -50,30 +50,65 @@ def create_order(db: Session, inventory_id: int, machine_id: str, buyer_id: int 
     return order
 
 
-def pay_order(db: Session, order_id: int, provider_name: str | None = None) -> Order:
+def pay_order(db: Session, order_id: int, provider_name: str | None = None) -> tuple[Order, dict | None]:
+    """发起支付。
+
+    返回 (order, pay_params)：
+      - 同步支付（mock）：直接标记已付并出货，pay_params 为 None。
+      - 异步支付（wechat）：返回小程序拉起参数，订单留待回调置为已付。
+    """
     order = db.get(Order, order_id)
     if order is None:
         raise OrderError(f"订单不存在：{order_id}")
     if order.status == OrderStatus.completed:
-        return order
+        return order, None
     if order.status != OrderStatus.created:
         raise OrderError(f"订单状态不可支付：{order.status.value}")
 
     settings = get_settings()
     provider = get_payment_provider(provider_name or settings.payment_provider)
-    intent = provider.create_payment(order.order_no, float(order.amount), description="二手书购买", openid="")
-    if not intent.ok or intent.status != "paid":
-        # 真实支付场景下这里应返回拉起参数、由回调更新；模拟支付直接成功
-        order.pay_provider = provider.name
-        raise OrderError(intent.message or "支付未完成，请在前端完成支付后回调")
 
-    order.status = OrderStatus.paid
+    openid = ""
+    if order.buyer_id:
+        buyer = db.get(User, order.buyer_id)
+        openid = buyer.openid if buyer else ""
+
+    intent = provider.create_payment(order.order_no, float(order.amount), "二手书购买", openid)
     order.pay_provider = provider.name
-    order.pay_txn_id = intent.txn_id
+    if intent.txn_id:
+        order.pay_txn_id = intent.txn_id
+
+    if not intent.ok:
+        db.commit()
+        raise OrderError(intent.message or "发起支付失败")
+
+    if intent.status == "paid":          # 同步成功（mock）
+        _settle(db, order, intent.txn_id)
+        return order, None
+
+    db.commit()                          # 异步（wechat）：等回调
+    return order, intent.pay_params
+
+
+def _settle(db: Session, order: Order, txn_id: str | None) -> None:
+    """标记已付并履约。"""
+    order.status = OrderStatus.paid
+    if txn_id:
+        order.pay_txn_id = txn_id
     order.paid_at = datetime.now()
     db.commit()
-
     _fulfill(db, order)
+
+
+def settle_by_order_no(db: Session, order_no: str, txn_id: str | None = None) -> Order | None:
+    """支付回调用：按业务单号确认支付并出货（幂等）。"""
+    order = db.scalar(select(Order).where(Order.order_no == order_no))
+    if order is None:
+        return None
+    if order.status == OrderStatus.completed:
+        return order
+    if order.status in (OrderStatus.created, OrderStatus.paid):
+        _settle(db, order, txn_id)
     return order
 
 

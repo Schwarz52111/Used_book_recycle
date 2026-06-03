@@ -81,6 +81,7 @@ class InventoryItem(BaseModel):
     title: str
     isbn: str
     condition_level: str
+    cost_price: float = 0.0
     sale_price: float
     machine_id: str
     slot_code: str
@@ -97,6 +98,7 @@ class IntakeRequest(BaseModel):
     slot_code: str = ""
     rfid_tag: str = ""
     seller_openid: str = ""   # 卖家微信 openid，填了则回收金额入其账户
+    seller_price: float | None = None  # 卖家改价；None=采用 AI 估价
 
 
 class DispenseRequest(BaseModel):
@@ -126,6 +128,12 @@ class OrderInfo(BaseModel):
     machine_id: str = ""
 
     model_config = {"from_attributes": True}
+
+
+class PayResult(BaseModel):
+    order: OrderInfo
+    paid: bool                      # True=同步已付(mock)；False=需前端拉起支付
+    pay_params: dict | None = None  # 微信小程序 wx.requestPayment 参数
 
 
 class LoginRequest(BaseModel):

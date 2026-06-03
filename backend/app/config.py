@@ -42,6 +42,13 @@ class Settings(BaseSettings):
     wechat_appid: str = ""
     wechat_secret: str = ""
 
+    # 微信支付（v3）
+    wechat_mchid: str = ""           # 商户号
+    wechat_api_v3_key: str = ""      # APIv3 密钥（32 位）
+    wechat_cert_serial: str = ""     # 商户证书序列号
+    wechat_private_key: str = ""     # 商户私钥：PEM 内容或文件路径
+    wechat_notify_url: str = ""      # 支付结果回调（已备案 HTTPS）
+
     @property
     def sqlalchemy_url(self) -> str:
         if self.database_url:

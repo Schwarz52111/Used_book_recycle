@@ -439,12 +439,13 @@ async function pay(it) {
       body: JSON.stringify({ order_id: order.id })
     });
     if (!p.ok) throw new Error((await p.json().catch(()=>({}))).detail || ("HTTP " + p.status));
-    const paid = await p.json();
+    const res = await p.json();
+    const orderNo = (res.order && res.order.order_no) || "";
     document.getElementById("buyModalBody").innerHTML = `
       <div style="color:var(--forest)">${ICON.check}</div>
       <h2>购买成功</h2>
       <p style="color:var(--ink-soft)">请到取书口领取你的书</p>
-      <p style="color:var(--sage);font-size:13px">订单号 ${paid.order_no}</p>
+      <p style="color:var(--sage);font-size:13px">订单号 ${orderNo}</p>
       <button class="btn btn-primary" style="margin-top:14px" onclick="closeModal(); openBuy()">继续逛逛</button>`;
   } catch (err) {
     document.getElementById("buyModalBody").innerHTML =

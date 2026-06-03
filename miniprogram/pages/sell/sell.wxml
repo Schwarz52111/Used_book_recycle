@@ -39,15 +39,16 @@
         <text class="badge" style="background: {{result.condColor}}">{{result.condLabel}}</text>
       </view>
 
-      <view wx:if="{{result.canRecycle}}" class="price-wrap">
-        <view class="price-main">
-          <view class="pm-num">{{result.recycleText}}</view>
-          <view class="pm-lbl">回收价 · 给你</view>
+      <view wx:if="{{result.canRecycle}}" class="price-edit">
+        <view class="pe-row">
+          <view class="pe-label">回收价 · 给你<text class="pe-ai">AI 估价 ¥{{result.aiPrice}}</text></view>
+          <view class="pe-input">
+            <text class="pe-unit">¥</text>
+            <input class="pe-field" type="digit" value="{{editPrice}}" bindinput="onPriceInput" />
+          </view>
         </view>
-        <view class="price-sub">
-          <view class="ps-num">{{result.saleText}}</view>
-          <view class="ps-lbl">预计上架售价</view>
-        </view>
+        <view class="pe-tip muted small">可手动调整。高于 AI 估价的部分将提交人工复核后到账。</view>
+        <view class="sale-line muted small">预计上架售价 {{result.saleText}}</view>
       </view>
 
       <view wx:else class="notice">{{result.notice}}</view>
@@ -65,7 +66,7 @@
 
       <view class="acts">
         <button class="btn btn-ghost" bindtap="reset">重拍</button>
-        <button wx:if="{{result.canRecycle}}" class="btn" bindtap="confirmRecycle">确认回收 {{result.recycleText}}</button>
+        <button wx:if="{{result.canRecycle}}" class="btn" bindtap="confirmRecycle">确认回收 ¥{{editPrice}}</button>
       </view>
     </view>
   </block>
@@ -75,7 +76,8 @@
     <view class="ok">✓</view>
     <view class="done-title">回收成功</view>
     <view class="done-amt">¥{{payout}} 已到账</view>
-    <view class="muted small">请将书放入设备投书口 · 感谢你为绿色校园出力</view>
+    <view wx:if="{{reviewing}}" class="muted small">你的报价高于 AI 估价，已按估价先行到账；更高报价已提交运营复核。</view>
+    <view wx:else class="muted small">请将书放入设备投书口 · 感谢你为绿色校园出力</view>
     <button class="btn" bindtap="reset">再卖一本</button>
   </view>
 </view>

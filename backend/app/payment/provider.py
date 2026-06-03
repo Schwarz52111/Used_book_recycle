@@ -65,20 +65,20 @@ class WeChatPayProvider(PaymentProvider):
 
     name = "wechat"
 
-    def __init__(self, config: dict | None = None) -> None:
-        self.config = config or {}
-
     def create_payment(self, order_no: str, amount: float, description: str, openid: str = "") -> PaymentIntent:
-        # TODO: 调用微信支付 v3「JSAPI 下单」接口，拿到 prepay_id，
-        #       再用商户私钥签名生成小程序 wx.requestPayment 所需参数返回。
-        raise NotImplementedError(
-            "微信支付尚未配置商户凭证。请在拿到商户号/APIv3密钥/证书后实现本方法，"
-            "开发期请使用 PAYMENT_PROVIDER=mock。"
-        )
+        from app.payment.wechat_v3 import build_pay_params, jsapi_prepay
+
+        if not openid:
+            return PaymentIntent(ok=False, provider=self.name, status="failed", message="缺少买家 openid")
+        amount_fen = int(round(float(amount) * 100))
+        prepay_id = jsapi_prepay(order_no, amount_fen, description or "二手书购买", openid)
+        params = build_pay_params(prepay_id)
+        # 异步支付：返回拉起参数，真正"已支付"由回调通知确认
+        return PaymentIntent(ok=True, provider=self.name, txn_id=prepay_id, status="pending", pay_params=params)
 
     def query_payment(self, order_no: str) -> str:
-        # TODO: 调用微信支付「查询订单」接口
-        raise NotImplementedError("微信支付查询未实现")
+        # TODO: 调用微信支付「查询订单」接口确认状态（可用于对账兜底）
+        return "pending"
 
 
 _REGISTRY: dict[str, type[PaymentProvider]] = {

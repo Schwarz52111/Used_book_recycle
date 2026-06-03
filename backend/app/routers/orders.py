@@ -13,6 +13,7 @@ from app.schemas import (
     OrderCreateRequest,
     OrderInfo,
     PayRequest,
+    PayResult,
     UserInfo,
 )
 
@@ -44,14 +45,14 @@ def create_order_endpoint(req: OrderCreateRequest, db: Session = Depends(get_db)
     return _to_order_info(order)
 
 
-@router.post("/orders/pay", response_model=OrderInfo)
+@router.post("/orders/pay", response_model=PayResult)
 def pay_order_endpoint(req: PayRequest, db: Session = Depends(get_db)):
-    """支付订单：成功后自动出货并完成。"""
+    """发起支付。mock 直接完成；wechat 返回拉起参数，由回调确认。"""
     try:
-        order = orders.pay_order(db, req.order_id, req.provider)
+        order, pay_params = orders.pay_order(db, req.order_id, req.provider)
     except orders.OrderError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
-    return _to_order_info(order)
+    return PayResult(order=_to_order_info(order), paid=pay_params is None, pay_params=pay_params)
 
 
 @router.post("/orders/cancel", response_model=OrderInfo)

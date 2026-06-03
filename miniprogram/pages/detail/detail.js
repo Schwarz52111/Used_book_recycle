@@ -40,7 +40,24 @@ Page({
     app
       .api("POST", "/orders", { inventory_id: it.id, machine_id: app.globalData.machineId, buyer_openid: app.globalData.openid })
       .then((order) => app.api("POST", "/orders/pay", { order_id: order.id }))
-      .then((paid) => this.setData({ paying: false, done: true, orderNo: paid.order_no }))
+      .then((res) => {
+        const orderNo = (res.order && res.order.order_no) || "";
+        if (res.paid) {
+          // 模拟支付：已完成
+          this.setData({ paying: false, done: true, orderNo });
+          return;
+        }
+        // 真实微信支付：拉起收银台
+        if (res.pay_params) {
+          wx.requestPayment({
+            ...res.pay_params,
+            success: () => this.setData({ paying: false, done: true, orderNo }),
+            fail: () => this.setData({ paying: false, error: "支付已取消" }),
+          });
+        } else {
+          this.setData({ paying: false, error: "支付发起失败" });
+        }
+      })
       .catch((e) => this.setData({ paying: false, error: e.message }));
   },
 

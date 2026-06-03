@@ -47,7 +47,8 @@ def test_order_happy_path():
     db.refresh(item)
     assert item.status == InventoryStatus.reserved      # 下单即锁库存
 
-    paid = orders.pay_order(db, order.id)               # 默认 mock 支付
+    paid, pay_params = orders.pay_order(db, order.id)   # 默认 mock 支付
+    assert pay_params is None                            # 同步支付无需拉起
     assert paid.status == OrderStatus.completed
     assert paid.pay_provider == "mock"
     db.refresh(item)
@@ -98,6 +99,20 @@ def test_balance_cannot_go_negative():
         assert False, "余额不足应报错"
     except Exception:
         pass
+
+
+def test_seller_price_resolution():
+    from app.inventory.service import resolve_payout
+
+    # 未改价 → 用 AI 估价
+    assert resolve_payout(20.0, None) == (20.0, False)
+    # 改低 → 直接采用，不复核
+    assert resolve_payout(20.0, 15.0) == (15.0, False)
+    # 改高 → 按 AI 价到账 + 标记复核
+    price, review = resolve_payout(20.0, 30.0)
+    assert price == 20.0 and review is True
+    # 低于下限 → 提到最低价
+    assert resolve_payout(20.0, 0.0)[0] == 1.0
 
 
 if __name__ == "__main__":
