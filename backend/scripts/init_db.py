@@ -10,7 +10,7 @@ from __future__ import annotations
 from sqlalchemy import select
 
 from app.db import Base, get_engine, get_sessionmaker
-from app.models import Book, ConditionRule
+from app.models import Book, ConditionRule, Inventory, InventoryStatus
 
 CONDITION_RULES = [
     ("like_new", "近全新，无明显使用痕迹", 0.90),
@@ -43,7 +43,26 @@ def main() -> None:
                     )
                 )
         db.commit()
-        print("✅ 初始化完成：表已就绪，品相规则与示例书目已写入。")
+
+        # 演示用：库存为空时，给示例书各上架一本"在库"，便于小程序/触屏直接看到可买的书
+        if not db.scalar(select(Inventory.id).limit(1)):
+            conds = [("good", 0.7), ("like_new", 0.9), ("acceptable", 0.5)]
+            for i, isbn in enumerate(b[0] for b in SAMPLE_BOOKS):
+                book = db.scalar(select(Book).where(Book.isbn == isbn))
+                if not book:
+                    continue
+                cond, factor = conds[i % len(conds)]
+                sale = round(float(book.market_price) * factor, 2)
+                db.add(
+                    Inventory(
+                        book_id=book.id, condition_level=cond,
+                        cost_price=round(sale * 0.5, 2), sale_price=sale,
+                        machine_id="KIOSK-01", slot_code=f"A{i + 1}",
+                        status=InventoryStatus.in_stock,
+                    )
+                )
+            db.commit()
+        print("✅ 初始化完成：表已就绪，品相规则、示例书目与在库示例已写入。")
     finally:
         db.close()
 

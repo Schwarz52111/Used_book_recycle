@@ -1,0 +1,22 @@
+<view class="wrap">
+  <view class="hero">
+    <view class="hero-title">校园二手书</view>
+    <view class="hero-sub muted">挑好下单，扫码即取 · 绿色循环</view>
+  </view>
+
+  <view wx:if="{{loading}}" class="spinner"></view>
+  <view wx:elif="{{error}}" class="empty">加载失败：{{error}}</view>
+  <view wx:elif="{{items.length === 0}}" class="empty muted">暂无在库书籍，先去设备投几本吧</view>
+
+  <view wx:else class="grid">
+    <view wx:for="{{items}}" wx:key="id" class="pcard card" bindtap="openDetail" data-item="{{item}}">
+      <view class="cover">📘</view>
+      <view class="title">{{item.title || '二手书'}}</view>
+      <view class="isbn muted">{{item.isbn}}</view>
+      <view class="row">
+        <text class="badge" style="background: {{item.condColor}}">{{item.condLabel}}</text>
+        <text class="price">{{item.priceText}}</text>
+      </view>
+    </view>
+  </view>
+</view>

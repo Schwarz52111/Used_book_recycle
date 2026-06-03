@@ -1,0 +1,25 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/detail/detail",
+    "pages/me/me"
+  ],
+  "window": {
+    "navigationBarBackgroundColor": "#2d4a2b",
+    "navigationBarTitleText": "即刻小绿",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#faf9f6"
+  },
+  "tabBar": {
+    "color": "#7d8471",
+    "selectedColor": "#2d4a2b",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "white",
+    "list": [
+      { "pagePath": "pages/index/index", "text": "买书" },
+      { "pagePath": "pages/me/me", "text": "我的" }
+    ]
+  },
+  "sitemapLocation": "sitemap.json",
+  "style": "v2"
+}

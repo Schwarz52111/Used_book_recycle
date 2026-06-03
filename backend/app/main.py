@@ -7,12 +7,13 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from app import __version__
 from app.recognition.local_cv import configure_tesseract
-from app.routers import appraise, inventory
+from app.routers import appraise, auth, inventory, orders
 
 STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
 
@@ -31,8 +32,18 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],          # 演示期放开；上线应收敛为小程序/前端域名
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 app.include_router(appraise.router)
 app.include_router(inventory.router)
+app.include_router(orders.router)
+app.include_router(auth.router)
 
 
 @app.get("/health")

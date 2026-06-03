@@ -33,6 +33,15 @@ class Settings(BaseSettings):
     review_confidence_threshold: float = 0.6
     default_base_recycle_rate: float = 0.35
 
+    # 支付与出货
+    payment_provider: str = "mock"   # mock | wechat
+    dispense_mechanism: str = "simulated"  # simulated | vend_channel | rfid_door
+
+    # 微信登录与小程序
+    auth_provider: str = "mock"      # mock | wechat
+    wechat_appid: str = ""
+    wechat_secret: str = ""
+
     @property
     def sqlalchemy_url(self) -> str:
         if self.database_url:

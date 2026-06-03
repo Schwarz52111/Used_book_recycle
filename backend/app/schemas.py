@@ -80,14 +80,66 @@ class InventoryItem(BaseModel):
 
 
 class IntakeRequest(BaseModel):
-    """确认回收入库。"""
+    """确认回收入库。可带卖家 openid，用于回收到账。"""
 
     record_id: int
     machine_id: str
     slot_code: str = ""
     rfid_tag: str = ""
+    seller_openid: str = ""   # 卖家微信 openid，填了则回收金额入其账户
 
 
 class DispenseRequest(BaseModel):
     inventory_id: int
     machine_id: str
+
+
+# ---------- 订单 / 账户 ----------
+class OrderCreateRequest(BaseModel):
+    inventory_id: int
+    machine_id: str
+    buyer_openid: str = ""    # 买家 openid，匿名可留空
+
+
+class PayRequest(BaseModel):
+    order_id: int
+    provider: str | None = None   # mock | wechat，留空用默认
+
+
+class OrderInfo(BaseModel):
+    id: int
+    order_no: str
+    inventory_id: int
+    amount: float
+    status: str
+    pay_provider: str = ""
+    machine_id: str = ""
+
+    model_config = {"from_attributes": True}
+
+
+class LoginRequest(BaseModel):
+    code: str                 # wx.login 返回的 code
+    nickname: str = ""
+
+
+class UserInfo(BaseModel):
+    id: int
+    openid: str
+    nickname: str = ""
+    balance: float = 0.0
+    credit_score: int = 100
+
+    model_config = {"from_attributes": True}
+
+
+class LedgerEntryInfo(BaseModel):
+    id: int
+    entry_type: str
+    amount: float
+    balance_after: float
+    ref_type: str = ""
+    ref_id: int | None = None
+    note: str = ""
+
+    model_config = {"from_attributes": True}

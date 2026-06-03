@@ -44,6 +44,21 @@ class ReviewStatus(str, enum.Enum):
     rejected = "rejected"
 
 
+class OrderStatus(str, enum.Enum):
+    created = "created"        # 已下单，待支付（库存锁定）
+    paid = "paid"             # 已支付，待出货
+    completed = "completed"   # 已出货完成
+    cancelled = "cancelled"   # 已取消（库存释放）
+    refunded = "refunded"     # 已退款
+
+
+class LedgerType(str, enum.Enum):
+    payout = "payout"     # 回收到账（+）
+    purchase = "purchase"  # 购书支出（-）
+    topup = "topup"       # 充值（+）
+    refund = "refund"     # 退款（+）
+
+
 class Book(Base):
     """书目基础信息与市场参考价（保留原表，新增封面/来源/热度）。"""
 
@@ -101,7 +116,9 @@ class Inventory(Base):
 
     __tablename__ = "inventory"
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(
+        BigInteger().with_variant(Integer, "sqlite"), primary_key=True, autoincrement=True
+    )
     book_id: Mapped[int] = mapped_column(ForeignKey("books.id"))
     recycle_record_id: Mapped[int | None] = mapped_column(ForeignKey("recycle_records.id"), nullable=True)
     condition_level: Mapped[str] = mapped_column(String(50), default="")
@@ -126,7 +143,9 @@ class ReviewTask(Base):
 
     __tablename__ = "review_tasks"
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(
+        BigInteger().with_variant(Integer, "sqlite"), primary_key=True, autoincrement=True
+    )
     recycle_record_id: Mapped[int | None] = mapped_column(ForeignKey("recycle_records.id"), nullable=True)
     reason: Mapped[str] = mapped_column(String(255), default="")       # low_confidence | reject_appeal | anomaly
     payload: Mapped[str] = mapped_column(Text, default="")            # JSON 快照
@@ -145,4 +164,61 @@ class BookMetadataCache(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     isbn: Mapped[str] = mapped_column(String(20), unique=True, index=True)
     payload: Mapped[str] = mapped_column(Text, default="")  # JSON
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+class User(Base):
+    """用户：微信 openid 登录，含余额与信用分。"""
+
+    __tablename__ = "users"
+
+    id: Mapped[int] = mapped_column(
+        BigInteger().with_variant(Integer, "sqlite"), primary_key=True, autoincrement=True
+    )
+    openid: Mapped[str] = mapped_column(String(64), unique=True, index=True)  # 微信 openid
+    nickname: Mapped[str] = mapped_column(String(64), default="")
+    phone: Mapped[str] = mapped_column(String(20), default="")
+    balance: Mapped[float] = mapped_column(DECIMAL(10, 2), default=0)     # 账户余额（元）
+    credit_score: Mapped[int] = mapped_column(Integer, default=100)       # 信用分
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+class Order(Base):
+    """订单：购书。下单锁库存，支付后出货完成。"""
+
+    __tablename__ = "orders"
+
+    id: Mapped[int] = mapped_column(
+        BigInteger().with_variant(Integer, "sqlite"), primary_key=True, autoincrement=True
+    )
+    order_no: Mapped[str] = mapped_column(String(40), unique=True, index=True)  # 业务单号
+    inventory_id: Mapped[int] = mapped_column(ForeignKey("inventory.id"))
+    buyer_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)  # 可匿名（设备直接购买）
+    amount: Mapped[float] = mapped_column(DECIMAL(10, 2), default=0)
+    machine_id: Mapped[str] = mapped_column(String(64), default="")
+    status: Mapped[OrderStatus] = mapped_column(Enum(OrderStatus), default=OrderStatus.created, index=True)
+    # 支付信息
+    pay_provider: Mapped[str] = mapped_column(String(32), default="")
+    pay_txn_id: Mapped[str] = mapped_column(String(64), default="")   # 第三方支付流水号
+    paid_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+    inventory: Mapped[Inventory] = relationship("Inventory", lazy="joined")
+
+
+class LedgerEntry(Base):
+    """账本流水：回收到账 / 购书支出 / 充值 / 退款，记录每笔余额变动。"""
+
+    __tablename__ = "ledger_entries"
+
+    id: Mapped[int] = mapped_column(
+        BigInteger().with_variant(Integer, "sqlite"), primary_key=True, autoincrement=True
+    )
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    entry_type: Mapped[LedgerType] = mapped_column(Enum(LedgerType))
+    amount: Mapped[float] = mapped_column(DECIMAL(10, 2))            # 正为入账，负为出账
+    balance_after: Mapped[float] = mapped_column(DECIMAL(10, 2))
+    ref_type: Mapped[str] = mapped_column(String(32), default="")   # order | recycle_record
+    ref_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    note: Mapped[str] = mapped_column(String(255), default="")
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())

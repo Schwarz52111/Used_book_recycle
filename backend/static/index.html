@@ -424,23 +424,31 @@ function openBuyModal(it) {
 }
 function closeModal(){ document.getElementById("buyModal").classList.remove("active"); }
 async function pay(it) {
-  document.getElementById("buyModalBody").innerHTML = `<div class="spinner"></div><p style="color:var(--ink-soft)">正在出货…</p>`;
+  document.getElementById("buyModalBody").innerHTML = `<div class="spinner"></div><p style="color:var(--ink-soft)">正在下单并支付…</p>`;
   try {
-    const r = await fetch(API + "/inventory/dispense?mechanism=simulated", {
+    // 1) 下单（锁库存）
+    const c = await fetch(API + "/orders", {
       method: "POST", headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({ inventory_id: it.id, machine_id: MACHINE_ID })
+      body: JSON.stringify({ inventory_id: it.id, machine_id: MACHINE_ID, buyer_openid: "" })
     });
-    if (!r.ok) throw new Error((await r.json().catch(()=>({}))).detail || ("HTTP " + r.status));
-    const res = await r.json();
+    if (!c.ok) throw new Error((await c.json().catch(()=>({}))).detail || ("HTTP " + c.status));
+    const order = await c.json();
+    // 2) 支付（开发期为模拟支付，成功后自动出货完成）
+    const p = await fetch(API + "/orders/pay", {
+      method: "POST", headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ order_id: order.id })
+    });
+    if (!p.ok) throw new Error((await p.json().catch(()=>({}))).detail || ("HTTP " + p.status));
+    const paid = await p.json();
     document.getElementById("buyModalBody").innerHTML = `
       <div style="color:var(--forest)">${ICON.check}</div>
       <h2>购买成功</h2>
-      <p style="color:var(--ink-soft)">${res.message || "请到取书口领取你的书"}</p>
-      ${res.pickup_code ? `<p>取书码：<b>${res.pickup_code}</b></p>` : ""}
+      <p style="color:var(--ink-soft)">请到取书口领取你的书</p>
+      <p style="color:var(--sage);font-size:13px">订单号 ${paid.order_no}</p>
       <button class="btn btn-primary" style="margin-top:14px" onclick="closeModal(); openBuy()">继续逛逛</button>`;
   } catch (err) {
     document.getElementById("buyModalBody").innerHTML =
-      `<div style="color:var(--clay)">${ICON.alert}</div><p>出货失败：${err.message}</p>
+      `<div style="color:var(--clay)">${ICON.alert}</div><p>支付失败：${err.message}</p>
        <button class="btn btn-ghost" onclick="closeModal()">关闭</button>`;
   }
 }

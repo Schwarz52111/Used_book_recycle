@@ -1,0 +1,50 @@
+/* 即刻小绿 · Forest Canopy 风格 */
+page {
+  --forest: #2d4a2b;
+  --sage: #7d8471;
+  --olive-soft: #e8ebdf;
+  --ivory: #faf9f6;
+  --line: #e3e1d6;
+  --ink: #26301f;
+  --clay: #b06a3b;
+  background: var(--ivory);
+  color: var(--ink);
+  font-family: -apple-system, "PingFang SC", sans-serif;
+}
+.badge {
+  display: inline-block;
+  color: #fff;
+  border-radius: 8rpx;
+  font-size: 22rpx;
+  padding: 4rpx 14rpx;
+}
+.price {
+  color: var(--clay);
+  font-weight: 700;
+}
+.btn {
+  background: var(--forest);
+  color: #fff;
+  border-radius: 16rpx;
+  text-align: center;
+  padding: 26rpx 0;
+  font-size: 32rpx;
+  font-weight: 600;
+}
+.btn-ghost {
+  background: #fff;
+  color: var(--forest);
+  border: 1rpx solid var(--line);
+}
+.muted { color: var(--sage); }
+.card {
+  background: #fff;
+  border: 1rpx solid var(--line);
+  border-radius: 18rpx;
+}
+.spinner {
+  width: 64rpx; height: 64rpx; margin: 60rpx auto;
+  border: 6rpx solid var(--olive-soft); border-top-color: var(--forest);
+  border-radius: 50%; animation: spin 1s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }

@@ -1,0 +1,13 @@
+.wrap { padding: 32rpx; }
+.profile { display: flex; align-items: center; padding: 32rpx; }
+.avatar { width: 96rpx; height: 96rpx; border-radius: 24rpx; background: var(--forest); color: #fff; font-size: 44rpx; display: flex; align-items: center; justify-content: center; }
+.uinfo { margin-left: 24rpx; flex: 1; min-width: 0; }
+.nick { font-size: 34rpx; font-weight: 700; color: var(--forest); }
+.oid { font-size: 22rpx; margin-top: 8rpx; word-break: break-all; }
+.stat { display: flex; align-items: center; padding: 36rpx; margin-top: 24rpx; }
+.stat-item { flex: 1; text-align: center; }
+.stat-num { font-size: 44rpx; font-weight: 700; color: var(--clay); }
+.divider { width: 1rpx; height: 60rpx; background: var(--line); }
+.hint { font-size: 24rpx; margin-top: 28rpx; text-align: center; line-height: 1.6; }
+.empty { text-align: center; padding-top: 140rpx; }
+.empty .btn { margin-top: 40rpx; }
