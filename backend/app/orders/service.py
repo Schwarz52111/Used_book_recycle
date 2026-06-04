@@ -16,7 +16,7 @@ from sqlalchemy.orm import Session
 
 from app.config import get_settings
 from app.inventory.dispense import get_dispenser
-from app.models import Inventory, InventoryStatus, Order, OrderStatus, User
+from app.models import Book, Inventory, InventoryStatus, Order, OrderStatus, User
 from app.payment.provider import get_payment_provider
 
 
@@ -126,7 +126,13 @@ def _fulfill(db: Session, order: Order) -> None:
     item.status = InventoryStatus.sold
     order.status = OrderStatus.completed
     # 说明：买家通过微信外部支付，不扣内部钱包余额；buyer_id 仅用于订单归属与历史。
-    # 若将来支持"用回收余额购书"，可在此按 balance 支付方式扣减。
+    # 完成购书给买家 +1 信用分。
+    if order.buyer_id:
+        from app.accounts.service import adjust_credit
+
+        buyer = db.get(User, order.buyer_id)
+        if buyer:
+            adjust_credit(db, buyer, 1)
     db.commit()
 
 
@@ -147,6 +153,47 @@ def cancel_order(db: Session, order_id: int) -> Order:
 
 def get_order(db: Session, order_id: int) -> Order | None:
     return db.get(Order, order_id)
+
+
+STATUS_LABEL = {
+    OrderStatus.created: "待支付",
+    OrderStatus.paid: "待出货",
+    OrderStatus.completed: "已完成",
+    OrderStatus.cancelled: "已取消",
+    OrderStatus.refunded: "已退款",
+}
+
+
+def user_orders(db: Session, openid: str, limit: int = 50) -> list[dict]:
+    """按 openid 列出用户订单（含书目信息），供个人中心展示。"""
+    user = db.scalar(select(User).where(User.openid == openid))
+    if not user:
+        return []
+    rows = db.execute(
+        select(
+            Order.order_no, Order.amount, Order.status, Order.created_at,
+            Book.title, Book.cover_url, Book.isbn,
+        )
+        .select_from(Order)
+        .join(Inventory, Order.inventory_id == Inventory.id)
+        .join(Book, Inventory.book_id == Book.id)
+        .where(Order.buyer_id == user.id)
+        .order_by(Order.id.desc())
+        .limit(limit)
+    ).all()
+    return [
+        {
+            "order_no": no,
+            "amount": round(float(amt or 0), 2),
+            "status": status.value,
+            "status_label": STATUS_LABEL.get(status, status.value),
+            "time": created.isoformat() if created else "",
+            "title": title,
+            "cover_url": cover or "",
+            "isbn": isbn or "",
+        }
+        for no, amt, status, created, title, cover, isbn in rows
+    ]
 
 
 def list_orders(db: Session, buyer_id: int | None = None, limit: int = 50) -> list[Order]:

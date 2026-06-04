@@ -51,6 +51,7 @@ Page({
       url: app.globalData.baseUrl + "/appraise",
       filePath: this.data.photo,
       name: "file",
+      formData: { seller_openid: app.globalData.openid || "" },
       success: (res) => {
         if (res.statusCode < 200 || res.statusCode >= 300) {
           this.setData({ stage: "idle", error: "估价失败：HTTP " + res.statusCode });

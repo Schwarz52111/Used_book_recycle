@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
 from app.appraisal import appraise
@@ -30,13 +30,20 @@ async def recognize_endpoint(file: UploadFile = File(...), db: Session = Depends
 
 
 @router.post("/appraise", response_model=AppraiseResponse)
-async def appraise_endpoint(file: UploadFile = File(...), db: Session = Depends(get_db)):
-    """一站式回收评估：识别 + 品相 + 定价，并落库（必要时挂起复核）。"""
+async def appraise_endpoint(
+    file: UploadFile = File(...),
+    seller_openid: str = Form(""),
+    db: Session = Depends(get_db),
+):
+    """一站式回收评估：识别 + 品相 + 定价，并落库（必要时挂起复核）。
+
+    传入 seller_openid 时，回收价按该卖家的信用分做差异化调整。
+    """
     data = await file.read()
     if not data:
         raise HTTPException(status_code=400, detail="空文件")
     try:
-        return appraise(db, data)
+        return appraise(db, data, seller_openid)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except RuntimeError as exc:  # 缺少 opencv 等识别依赖

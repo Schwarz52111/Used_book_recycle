@@ -21,6 +21,22 @@
       </view>
     </view>
 
+    <!-- 我的订单 -->
+    <view class="sec-title">我的订单</view>
+    <view wx:if="{{orders.length === 0}}" class="empty card muted">还没有购书订单，去买书页逛逛</view>
+    <view wx:else class="card list">
+      <view wx:for="{{orders}}" wx:key="order_no" class="row">
+        <view class="row-l">
+          <view class="row-text">{{item.title}}</view>
+          <view class="row-bal muted small">{{item.time}} · {{item.order_no}}</view>
+        </view>
+        <view class="ord-right">
+          <view class="ord-amt">{{item.amountText}}</view>
+          <view class="ord-status {{item.done ? 'ok' : ''}}">{{item.statusLabel}}</view>
+        </view>
+      </view>
+    </view>
+
     <!-- 账单 -->
     <view class="sec-title">账单流水</view>
     <view wx:if="{{ledger.length === 0}}" class="empty card muted">还没有流水，去卖几本书试试</view>

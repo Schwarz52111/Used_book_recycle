@@ -48,7 +48,17 @@ def _stock_coef(stock_count: int) -> float:
     return round(max(0.6, 1.0 - 0.1 * max(0, stock_count)), 3)
 
 
-def evaluate_price(db: Session, book: Book, condition_level: str) -> PriceResult:
+def credit_coef(credit_score: int | None) -> float:
+    """信用分 → 回收系数：100→1.0，150→1.10，0→0.80，区间封顶 [0.8, 1.15]。"""
+    if credit_score is None:
+        return 1.0
+    f = 1.0 + (float(credit_score) - 100) / 500.0
+    return round(max(0.8, min(1.15, f)), 3)
+
+
+def evaluate_price(
+    db: Session, book: Book, condition_level: str, seller_credit: int | None = None
+) -> PriceResult:
     market = float(book.market_price or 0)
     base_rate = float(book.base_recycle_rate or 0.35)
     cond_factor = _condition_factor(db, condition_level)
@@ -65,8 +75,9 @@ def evaluate_price(db: Session, book: Book, condition_level: str) -> PriceResult
         or 0
     )
     stock_coef = _stock_coef(stock_count)
+    cred_coef = credit_coef(seller_credit)
 
-    recycle = market * base_rate * cond_factor * heat_coef * stock_coef
+    recycle = market * base_rate * cond_factor * heat_coef * stock_coef * cred_coef
     recycle = round(max(recycle, MIN_PRICE), 2)
 
     sale_ratio = CONDITION_SALE_RATIO.get(condition_level, 0.4)
@@ -80,11 +91,15 @@ def evaluate_price(db: Session, book: Book, condition_level: str) -> PriceResult
         "heat_coef": heat_coef,
         "stock_coef": stock_coef,
         "stock_count": stock_count,
+        "credit_coef": cred_coef,
     }
+    credit_part = (
+        f" × 信用系数 {cred_coef:.2f}（信用分 {seller_credit}）" if seller_credit is not None else ""
+    )
     reason = (
         f"市场参考价 {market:.2f} × 基础回收率 {base_rate:.2f} × 品相系数 {cond_factor:.2f}"
         f"（{condition_level}）× 热度系数 {heat_coef:.2f} × 库存系数 {stock_coef:.2f}"
-        f"（在库 {stock_count} 本）= 回收价 {recycle:.2f} 元；"
+        f"（在库 {stock_count} 本）{credit_part} = 回收价 {recycle:.2f} 元；"
         f"按品相售价比 {sale_ratio:.2f} 与加价 {SALE_MARKUP:.1f}× 取高，得售价 {sale:.2f} 元。"
     )
 

@@ -82,6 +82,12 @@ def get_user_endpoint(openid: str, db: Session = Depends(get_db)):
     )
 
 
+@router.get("/users/{openid}/orders")
+def user_orders_endpoint(openid: str, db: Session = Depends(get_db)):
+    """用户订单历史（含书目信息）。"""
+    return orders.user_orders(db, openid)
+
+
 @router.get("/users/{openid}/ledger", response_model=list[LedgerEntryInfo])
 def user_ledger_endpoint(openid: str, db: Session = Depends(get_db)):
     user = get_or_create_user(db, openid)

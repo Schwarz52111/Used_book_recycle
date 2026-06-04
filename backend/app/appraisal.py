@@ -9,10 +9,12 @@ import json
 
 from sqlalchemy.orm import Session
 
+from sqlalchemy import select
+
 from app.analytics.admission import check_admission
 from app.config import get_settings
 from app.grading.condition_agent import assess_condition
-from app.models import Book, RecycleRecord, ReviewStatus, ReviewTask
+from app.models import Book, RecycleRecord, ReviewStatus, ReviewTask, User
 from app.pricing.engine import evaluate_price
 from app.recognition import imaging
 from app.recognition.pipeline import recognize
@@ -20,10 +22,16 @@ from app.schemas import AdmissionInfo, AppraiseResponse
 from app.vlm_client import get_vlm_client
 
 
-def appraise(db: Session, image_bytes: bytes) -> AppraiseResponse:
+def appraise(db: Session, image_bytes: bytes, seller_openid: str = "") -> AppraiseResponse:
     settings = get_settings()
     vlm = get_vlm_client()
     threshold = settings.review_confidence_threshold
+
+    # 卖家信用分（用于差异化回收率）
+    seller_credit = None
+    if seller_openid:
+        u = db.scalar(select(User).where(User.openid == seller_openid))
+        seller_credit = u.credit_score if u else None
 
     # 1) 识别
     rec = recognize(db, image_bytes, vlm, threshold)
@@ -44,7 +52,7 @@ def appraise(db: Session, image_bytes: bytes) -> AppraiseResponse:
                 in_stock=adm.in_stock, heat=adm.heat, reason=adm.reason,
             )
             if adm.accepted and not cond.rejected:
-                price = evaluate_price(db, book, cond.condition_level)
+                price = evaluate_price(db, book, cond.condition_level, seller_credit=seller_credit)
 
     # 4) 落库
     record = RecycleRecord(

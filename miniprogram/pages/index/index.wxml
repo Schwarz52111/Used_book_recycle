@@ -4,8 +4,23 @@
     <view class="hero-sub muted">挑好下单 · 扫码即取 · 绿色循环</view>
   </view>
 
-  <!-- 为你推荐 -->
-  <block wx:if="{{recos.length}}">
+  <!-- 搜索 -->
+  <view class="search">
+    <text class="s-ico">🔍</text>
+    <input class="s-input" placeholder="搜书名 / 作者 / ISBN" value="{{q}}"
+           confirm-type="search" bindinput="onSearchInput" bindconfirm="doSearch" />
+    <text wx:if="{{q}}" class="s-clear" bindtap="clearSearch">✕</text>
+  </view>
+
+  <!-- 分类标签 -->
+  <scroll-view wx:if="{{categories.length}}" scroll-x class="chips" show-scrollbar="{{false}}">
+    <view class="chip {{category === '' ? 'on' : ''}}" data-cat="" bindtap="selectCategory">全部</view>
+    <view wx:for="{{categories}}" wx:key="*this" class="chip {{category === item ? 'on' : ''}}"
+          data-cat="{{item}}" bindtap="selectCategory">{{item}}</view>
+  </scroll-view>
+
+  <!-- 为你推荐（仅未筛选时显示） -->
+  <block wx:if="{{recos.length && !q && !category}}">
     <view class="sec-title">为你推荐</view>
     <scroll-view scroll-x class="reco-scroll" show-scrollbar="{{false}}">
       <view wx:for="{{recos}}" wx:key="id" class="reco" bindtap="openDetail" data-item="{{item}}">
@@ -25,7 +40,7 @@
 
   <view wx:if="{{loading}}" class="spinner"></view>
   <view wx:elif="{{error}}" class="empty">加载失败：{{error}}</view>
-  <view wx:elif="{{items.length === 0}}" class="empty muted">暂无在库书籍，先去设备投几本吧</view>
+  <view wx:elif="{{items.length === 0}}" class="empty muted">{{ (q || category) ? '没有匹配的书，换个关键词或分类试试' : '暂无在库书籍，先去设备投几本吧' }}</view>
 
   <view wx:else class="grid">
     <view wx:for="{{items}}" wx:key="id" class="pcard card" bindtap="openDetail" data-item="{{item}}">

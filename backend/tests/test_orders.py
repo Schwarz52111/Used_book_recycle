@@ -101,6 +101,20 @@ def test_balance_cannot_go_negative():
         pass
 
 
+def test_user_orders_history():
+    db = _session()
+    item = _seed_inventory(db, sale_price=30.0)
+    user = get_or_create_user(db, "openid_hist")
+    order = orders.create_order(db, item.id, "KIOSK-01", buyer_id=user.id)
+    orders.pay_order(db, order.id)                      # mock → completed
+    hist = orders.user_orders(db, "openid_hist")
+    assert len(hist) == 1
+    assert hist[0]["title"] == "测试书"
+    assert hist[0]["status_label"] == "已完成"
+    # 未知用户返回空
+    assert orders.user_orders(db, "no_such") == []
+
+
 def test_seller_price_resolution():
     from app.inventory.service import resolve_payout
 

@@ -33,20 +33,46 @@ function decorate(it) {
 }
 
 Page({
-  data: { items: [], recos: [], loading: true, error: "" },
+  data: { items: [], recos: [], categories: [], q: "", category: "", loading: true, error: "" },
 
   onShow() {
     this.load();
     this.loadRecos();
+    this.loadCategories();
   },
 
   load() {
     this.setData({ loading: true, error: "" });
-    const mid = encodeURIComponent(app.globalData.machineId);
+    let url = "/inventory?status=in_stock&machine_id=" + encodeURIComponent(app.globalData.machineId);
+    if (this.data.q) url += "&q=" + encodeURIComponent(this.data.q);
+    if (this.data.category) url += "&category=" + encodeURIComponent(this.data.category);
     app
-      .api("GET", "/inventory?status=in_stock&machine_id=" + mid)
+      .api("GET", url)
       .then((items) => this.setData({ items: (items || []).map(decorate), loading: false }))
       .catch((e) => this.setData({ error: e.message, loading: false }));
+  },
+
+  loadCategories() {
+    app
+      .api("GET", "/inventory/categories?machine_id=" + encodeURIComponent(app.globalData.machineId))
+      .then((cats) => this.setData({ categories: cats || [] }))
+      .catch(() => {});
+  },
+
+  onSearchInput(e) {
+    this.setData({ q: e.detail.value });
+  },
+  doSearch() {
+    this.load();
+  },
+  clearSearch() {
+    this.setData({ q: "" });
+    this.load();
+  },
+  selectCategory(e) {
+    const c = e.currentTarget.dataset.cat;
+    this.setData({ category: this.data.category === c ? "" : c });
+    this.load();
   },
 
   loadRecos() {

@@ -88,6 +88,7 @@ def dashboard(db: Session = Depends(get_db)):
 
     recent_rows = db.execute(
         select(Order.order_no, Order.amount, Order.created_at, Book.title)
+        .select_from(Order)
         .join(Inventory, Order.inventory_id == Inventory.id)
         .join(Book, Inventory.book_id == Book.id)
         .where(Order.status == OrderStatus.completed)

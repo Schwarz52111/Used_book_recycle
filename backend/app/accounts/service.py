@@ -65,6 +65,17 @@ def credit_recycle_payout(db: Session, user: User, amount: float, recycle_record
     )
 
 
+CREDIT_MIN, CREDIT_MAX = 0, 150
+
+
+def adjust_credit(db: Session, user: User, delta: int) -> int:
+    """调整用户信用分，封顶在 [0, 150]。返回新分值。"""
+    new = int(user.credit_score or 100) + int(delta)
+    user.credit_score = max(CREDIT_MIN, min(CREDIT_MAX, new))
+    db.commit()
+    return user.credit_score
+
+
 def list_ledger(db: Session, user_id: int, limit: int = 50) -> list[LedgerEntry]:
     return list(
         db.scalars(

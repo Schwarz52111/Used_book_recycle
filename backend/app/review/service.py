@@ -12,7 +12,7 @@ from datetime import datetime
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.accounts.service import post_ledger
+from app.accounts.service import adjust_credit, post_ledger
 from app.models import (
     Book,
     Inventory,
@@ -132,6 +132,8 @@ def resolve(
             item.status = InventoryStatus.scrapped
         if seller and item:
             _safe_adjust(db, seller, -float(item.cost_price or 0), note="复核驳回·回收款冲正")
+        if seller:
+            adjust_credit(db, seller, -15)   # 驳回扣信用分
         task.status = ReviewStatus.rejected
 
     else:

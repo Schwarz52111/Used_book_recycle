@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from app.inventory.dispense import DispenseResult, get_dispenser
@@ -99,11 +99,39 @@ def intake(
     return item
 
 
-def list_inventory(db: Session, machine_id: str | None = None, status: str = "in_stock") -> list[Inventory]:
+def list_inventory(
+    db: Session,
+    machine_id: str | None = None,
+    status: str = "in_stock",
+    q: str | None = None,
+    category: str | None = None,
+) -> list[Inventory]:
     stmt = select(Inventory).where(Inventory.status == InventoryStatus(status))
     if machine_id:
         stmt = stmt.where(Inventory.machine_id == machine_id)
+    if q or category:
+        stmt = stmt.join(Book, Inventory.book_id == Book.id)
+        if category:
+            stmt = stmt.where(Book.category == category)
+        if q:
+            like = f"%{q}%"
+            stmt = stmt.where(
+                or_(Book.title.like(like), Book.isbn.like(like), Book.author.like(like))
+            )
     return list(db.scalars(stmt).all())
+
+
+def list_categories(db: Session, machine_id: str | None = None) -> list[str]:
+    stmt = (
+        select(Book.category)
+        .select_from(Inventory)
+        .join(Book, Inventory.book_id == Book.id)
+        .where(Inventory.status == InventoryStatus.in_stock)
+        .distinct()
+    )
+    if machine_id:
+        stmt = stmt.where(Inventory.machine_id == machine_id)
+    return [c for (c,) in db.execute(stmt).all() if c]
 
 
 def dispense(db: Session, inventory_id: int, machine_id: str, mechanism: str = "simulated") -> DispenseResult:

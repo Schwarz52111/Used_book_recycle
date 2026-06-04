@@ -26,6 +26,10 @@
 .row-bal { margin-top: 6rpx; }
 .row-amt { font-size: 34rpx; font-weight: 700; }
 .empty { padding: 50rpx; text-align: center; font-size: 28rpx; }
+.ord-right { text-align: right; }
+.ord-amt { font-size: 30rpx; font-weight: 700; color: var(--clay); }
+.ord-status { font-size: 22rpx; color: var(--sage); margin-top: 6rpx; }
+.ord-status.ok { color: var(--forest); }
 
 .oid { margin: 28rpx 6rpx; word-break: break-all; }
 .empty-login { text-align: center; padding-top: 160rpx; }

@@ -32,6 +32,7 @@ def _affinity(db: Session, user_id: int) -> dict[str, int]:
     # 购买历史
     for (cat,) in db.execute(
         select(Book.category)
+        .select_from(Order)
         .join(Inventory, Order.inventory_id == Inventory.id)
         .join(Book, Inventory.book_id == Book.id)
         .where(Order.buyer_id == user_id, Order.status == OrderStatus.completed)
@@ -41,6 +42,7 @@ def _affinity(db: Session, user_id: int) -> dict[str, int]:
     # 回收历史（通过回收到账流水回溯）
     for (cat,) in db.execute(
         select(Book.category)
+        .select_from(LedgerEntry)
         .join(RecycleRecord, RecycleRecord.id == LedgerEntry.ref_id)
         .join(Book, RecycleRecord.book_id == Book.id)
         .where(

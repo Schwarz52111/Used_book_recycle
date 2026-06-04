@@ -3,6 +3,17 @@
 .hero-title { font-size: 48rpx; font-weight: 800; color: var(--forest); letter-spacing: 1rpx; }
 .hero-sub { font-size: 26rpx; margin-top: 8rpx; }
 
+/* 搜索 */
+.search { display: flex; align-items: center; background: #fff; border-radius: 999rpx; padding: 16rpx 26rpx; box-shadow: 0 6rpx 20rpx rgba(47,93,58,.05); margin-bottom: 18rpx; }
+.s-ico { font-size: 28rpx; opacity: .55; }
+.s-input { flex: 1; margin-left: 14rpx; font-size: 28rpx; color: var(--ink); }
+.s-clear { color: var(--sage); font-size: 30rpx; padding: 0 8rpx; }
+
+/* 分类标签 */
+.chips { white-space: nowrap; margin-bottom: 22rpx; }
+.chip { display: inline-block; padding: 12rpx 30rpx; margin-right: 14rpx; border-radius: 999rpx; background: #fff; color: var(--ink-soft); font-size: 26rpx; box-shadow: 0 4rpx 14rpx rgba(47,93,58,.04); }
+.chip.on { background: var(--forest); color: #fff; }
+
 .grid { display: flex; flex-wrap: wrap; justify-content: space-between; }
 .pcard { width: 48.5%; margin-bottom: 26rpx; padding: 14rpx 14rpx 20rpx; box-sizing: border-box; }
 

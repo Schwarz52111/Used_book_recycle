@@ -8,7 +8,7 @@ const LEDGER_LABEL = {
 };
 
 Page({
-  data: { user: null, ledger: [], loading: true, error: "" },
+  data: { user: null, ledger: [], orders: [], loading: true, error: "" },
 
   onShow() {
     this.refresh();
@@ -29,8 +29,9 @@ Page({
     Promise.all([
       app.api("GET", "/users/" + openid),
       app.api("GET", "/users/" + openid + "/ledger"),
+      app.api("GET", "/users/" + openid + "/orders"),
     ])
-      .then(([user, ledger]) => {
+      .then(([user, ledger, orders]) => {
         app.globalData.user = user;
         const list = (ledger || []).map((e) => {
           const m = LEDGER_LABEL[e.entry_type] || { text: e.entry_type, sign: "", color: "#5f6655" };
@@ -42,9 +43,18 @@ Page({
             balanceText: "余额 ¥" + Number(e.balance_after).toFixed(2),
           };
         });
+        const ords = (orders || []).map((o) => ({
+          order_no: o.order_no,
+          title: o.title || "二手书",
+          amountText: "¥" + Number(o.amount || 0).toFixed(2),
+          statusLabel: o.status_label || o.status,
+          done: o.status === "completed",
+          time: (o.time || "").replace("T", " ").slice(5, 16),
+        }));
         this.setData({
           user: Object.assign({}, user, { balanceText: "¥" + Number(user.balance || 0).toFixed(2) }),
           ledger: list,
+          orders: ords,
           loading: false,
         });
       })
