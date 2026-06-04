@@ -83,6 +83,7 @@ class InventoryItem(BaseModel):
     condition_level: str
     cost_price: float = 0.0
     sale_price: float
+    cover_url: str = ""
     machine_id: str
     slot_code: str
     status: str

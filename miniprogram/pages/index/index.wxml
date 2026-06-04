@@ -1,8 +1,27 @@
 <view class="wrap">
   <view class="hero">
     <view class="hero-title">校园二手书</view>
-    <view class="hero-sub muted">挑好下单，扫码即取 · 绿色循环</view>
+    <view class="hero-sub muted">挑好下单 · 扫码即取 · 绿色循环</view>
   </view>
+
+  <!-- 为你推荐 -->
+  <block wx:if="{{recos.length}}">
+    <view class="sec-title">为你推荐</view>
+    <scroll-view scroll-x class="reco-scroll" show-scrollbar="{{false}}">
+      <view wx:for="{{recos}}" wx:key="id" class="reco" bindtap="openDetail" data-item="{{item}}">
+        <view class="reco-cover">
+          <image wx:if="{{item.coverUrl && !item.coverFailed}}" class="reco-img" src="{{item.coverUrl}}"
+                 mode="aspectFill" binderror="onRecoCoverError" data-idx="{{index}}" />
+          <view wx:else class="reco-gen" style="background: linear-gradient(150deg, {{item.c1}}, {{item.c2}})">
+            <text class="rg-title">{{item.title}}</text>
+          </view>
+        </view>
+        <view class="reco-reason">{{item.reason}}</view>
+        <view class="reco-price">{{item.priceText}}</view>
+      </view>
+    </scroll-view>
+    <view class="sec-title">全部在库</view>
+  </block>
 
   <view wx:if="{{loading}}" class="spinner"></view>
   <view wx:elif="{{error}}" class="empty">加载失败：{{error}}</view>
@@ -10,15 +29,20 @@
 
   <view wx:else class="grid">
     <view wx:for="{{items}}" wx:key="id" class="pcard card" bindtap="openDetail" data-item="{{item}}">
-      <view class="cover" style="background: linear-gradient(150deg, {{item.c1}}, {{item.c2}})">
-        <text class="cv-kicker">二手书</text>
-        <text class="cv-title">{{item.title || '二手书'}}</text>
-        <view class="cv-rule"></view>
-        <text class="cv-foot">即刻小绿</text>
+      <view class="cover-wrap">
+        <image wx:if="{{item.coverUrl && !item.coverFailed}}" class="cover-img" src="{{item.coverUrl}}"
+               mode="aspectFill" binderror="onCoverError" data-idx="{{index}}" />
+        <view wx:else class="cover-gen" style="background: linear-gradient(150deg, {{item.c1}}, {{item.c2}})">
+          <text class="cg-title">{{item.title || '二手书'}}</text>
+          <view class="cg-rule"></view>
+          <text class="cg-foot">即刻小绿</text>
+        </view>
+        <text class="cover-badge" style="background: {{item.condColor}}">{{item.condLabel}}</text>
       </view>
-      <view class="row">
-        <text class="badge" style="background: {{item.condColor}}">{{item.condLabel}}</text>
+      <view class="p-title">{{item.title || '二手书'}}</view>
+      <view class="p-row">
         <text class="price">{{item.priceText}}</text>
+        <view class="p-buy">购买</view>
       </view>
     </view>
   </view>

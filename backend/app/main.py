@@ -13,7 +13,16 @@ from fastapi.staticfiles import StaticFiles
 
 from app import __version__
 from app.recognition.local_cv import configure_tesseract
-from app.routers import analytics, appraise, auth, inventory, orders, payment
+from app.routers import (
+    analytics,
+    appraise,
+    auth,
+    inventory,
+    orders,
+    payment,
+    recommend,
+    review,
+)
 
 STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
 
@@ -46,6 +55,8 @@ app.include_router(orders.router)
 app.include_router(auth.router)
 app.include_router(analytics.router)
 app.include_router(payment.router)
+app.include_router(review.router)
+app.include_router(recommend.router)
 
 
 @app.get("/health")

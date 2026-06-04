@@ -1,54 +1,46 @@
-/* 即刻小绿 · Forest Canopy 风格 */
+/* 即刻小绿 · 清爽园艺风（参考 PlantCare） */
 page {
-  --forest: #2d4a2b;
-  --forest-700: #3a5d37;
-  --sage: #7d8471;
-  --olive: #a4ac86;
-  --olive-soft: #e8ebdf;
-  --ivory: #f3f6f1;
-  --line: #e3e1d6;
-  --ink: #26301f;
-  --ink-soft: #5f6655;
-  --clay: #b06a3b;
-  background: var(--ivory);
+  --forest: #2f5d3a;
+  --forest-700: #3a6b46;
+  --sage: #8a9a86;
+  --sage-ink: #5b6b58;
+  --mint: #e8f1e6;       /* 浅绿卡片底 */
+  --mint-soft: #f0f6ee;
+  --bg: #eef4ec;         /* 页面浅绿底 */
+  --paper: #ffffff;
+  --line: #e9efe6;
+  --ink: #25372a;
+  --ink-soft: #6a7668;
+  --clay: #c07d4a;       /* 暖橙重音（价格/到账） */
+  background: var(--bg);
   color: var(--ink);
   font-family: -apple-system, "PingFang SC", sans-serif;
 }
 .badge {
-  display: inline-block;
-  color: #fff;
-  border-radius: 8rpx;
-  font-size: 22rpx;
-  padding: 4rpx 14rpx;
-  font-weight: 600;
+  display: inline-block; color: #fff; border-radius: 999rpx;
+  font-size: 22rpx; padding: 5rpx 16rpx; font-weight: 600;
 }
-.price { color: var(--clay); font-weight: 700; }
-.muted { color: var(--sage); }
+.price { color: var(--clay); font-weight: 800; }
+.muted { color: var(--sage-ink); }
 .small { font-size: 24rpx; }
 
+/* 卡片：纯白、大圆角、柔和阴影、无边框 */
 .card {
-  background: #fff;
-  border: 1rpx solid var(--line);
-  border-radius: 20rpx;
-  box-shadow: 0 6rpx 24rpx rgba(45, 74, 43, 0.05);
+  background: var(--paper);
+  border-radius: 28rpx;
+  box-shadow: 0 10rpx 30rpx rgba(47, 93, 58, 0.07);
 }
 
 .btn {
-  background: var(--forest);
-  color: #fff;
-  border-radius: 14rpx;
-  text-align: center;
-  padding: 26rpx 0;
-  font-size: 32rpx;
-  font-weight: 600;
-  line-height: 1.2;
+  background: var(--forest); color: #fff; border-radius: 18rpx;
+  text-align: center; padding: 28rpx 0; font-size: 32rpx; font-weight: 600; line-height: 1.2;
 }
 .btn::after { border: none; }
-.btn-ghost { background: #fff; color: var(--forest); border: 1rpx solid var(--line); }
+.btn-ghost { background: var(--mint); color: var(--forest); }
 
 .spinner {
-  width: 64rpx; height: 64rpx; margin: 70rpx auto;
-  border: 6rpx solid var(--olive-soft); border-top-color: var(--forest);
+  width: 64rpx; height: 64rpx; margin: 80rpx auto;
+  border: 6rpx solid var(--mint); border-top-color: var(--forest);
   border-radius: 50%; animation: spin 1s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }

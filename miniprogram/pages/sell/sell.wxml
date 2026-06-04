@@ -40,14 +40,19 @@
       </view>
 
       <view wx:if="{{result.canRecycle}}" class="price-edit">
-        <view class="pe-row">
-          <view class="pe-label">回收价 · 给你<text class="pe-ai">AI 估价 ¥{{result.aiPrice}}</text></view>
+        <view class="pe-head">
+          <text class="pe-label">回收价 · 给你</text>
+          <text class="pe-ai">AI 估价 ¥{{result.aiPrice}}</text>
+        </view>
+        <view class="pe-stepper">
+          <view class="step" bindtap="decPrice">−</view>
           <view class="pe-input">
             <text class="pe-unit">¥</text>
             <input class="pe-field" type="digit" value="{{editPrice}}" bindinput="onPriceInput" />
           </view>
+          <view class="step" bindtap="incPrice">＋</view>
         </view>
-        <view class="pe-tip muted small">可手动调整。高于 AI 估价的部分将提交人工复核后到账。</view>
+        <view class="pe-tip muted small">点 − / ＋ 或直接输入修改。高于 AI 估价将提交人工复核后处理。</view>
         <view class="sale-line muted small">预计上架售价 {{result.saleText}}</view>
       </view>
 

@@ -6,14 +6,14 @@
     "pages/me/me"
   ],
   "window": {
-    "navigationBarBackgroundColor": "#2d4a2b",
+    "navigationBarBackgroundColor": "#eef4ec",
     "navigationBarTitleText": "即刻小绿",
-    "navigationBarTextStyle": "white",
-    "backgroundColor": "#f3f6f1"
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#eef4ec"
   },
   "tabBar": {
-    "color": "#9aa091",
-    "selectedColor": "#2d4a2b",
+    "color": "#9aa790",
+    "selectedColor": "#2f5d3a",
     "backgroundColor": "#ffffff",
     "borderStyle": "white",
     "list": [

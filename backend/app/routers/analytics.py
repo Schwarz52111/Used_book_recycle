@@ -6,9 +6,18 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.analytics.heat import recompute_heat
+from app.analytics.heat import _sales_by_book, recompute_heat
 from app.db import get_db
-from app.models import Book, Inventory, InventoryStatus, Order, OrderStatus
+from app.models import (
+    Book,
+    Inventory,
+    InventoryStatus,
+    Order,
+    OrderStatus,
+    RecycleRecord,
+    ReviewStatus,
+    ReviewTask,
+)
 
 router = APIRouter(prefix="/analytics", tags=["analytics"])
 
@@ -50,4 +59,59 @@ def overview(db: Session = Depends(get_db)):
         "sold": sold,
         "revenue": round(float(revenue), 2),
         "top_heat": [{"book_id": bid, "title": t, "heat": float(h or 0)} for bid, t, h in top],
+    }
+
+
+@router.get("/dashboard")
+def dashboard(db: Session = Depends(get_db)):
+    """运营看板聚合数据：KPI + 热度排行 + 近期成交。"""
+    in_stock = db.scalar(
+        select(func.count(Inventory.id)).where(Inventory.status == InventoryStatus.in_stock)
+    ) or 0
+    sold = db.scalar(select(func.count(Order.id)).where(Order.status == OrderStatus.completed)) or 0
+    revenue = db.scalar(
+        select(func.coalesce(func.sum(Order.amount), 0)).where(Order.status == OrderStatus.completed)
+    ) or 0
+    recycled = db.scalar(select(func.count(RecycleRecord.id))) or 0
+    review_pending = db.scalar(
+        select(func.count(ReviewTask.id)).where(ReviewTask.status == ReviewStatus.pending)
+    ) or 0
+
+    sales = _sales_by_book(db)
+    top_rows = db.execute(
+        select(Book.id, Book.title, Book.heat_score).order_by(Book.heat_score.desc()).limit(8)
+    ).all()
+    top_heat = [
+        {"book_id": bid, "title": t, "heat": float(h or 0), "sales": sales.get(bid, 0)}
+        for bid, t, h in top_rows
+    ]
+
+    recent_rows = db.execute(
+        select(Order.order_no, Order.amount, Order.created_at, Book.title)
+        .join(Inventory, Order.inventory_id == Inventory.id)
+        .join(Book, Inventory.book_id == Book.id)
+        .where(Order.status == OrderStatus.completed)
+        .order_by(Order.id.desc())
+        .limit(8)
+    ).all()
+    recent = [
+        {
+            "order_no": no,
+            "amount": round(float(amt or 0), 2),
+            "title": title,
+            "time": created.isoformat() if created else "",
+        }
+        for no, amt, created, title in recent_rows
+    ]
+
+    return {
+        "kpi": {
+            "in_stock": in_stock,
+            "sold": sold,
+            "revenue": round(float(revenue), 2),
+            "recycled": recycled,
+            "review_pending": review_pending,
+        },
+        "top_heat": top_heat,
+        "recent": recent,
     }

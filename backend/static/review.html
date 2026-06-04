@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>即刻小绿 · 人工复核控制台</title>
+<style>
+  :root {
+    --forest:#2d4a2b; --forest-700:#3a5d37; --sage:#7d8471; --olive:#a4ac86;
+    --olive-soft:#e8ebdf; --ivory:#f3f6f1; --line:#e3e1d6; --ink:#26301f;
+    --ink-soft:#5f6655; --clay:#b06a3b; --serif:Georgia,"Songti SC",serif;
+    --sans:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:var(--sans);color:var(--ink);background:var(--ivory);}
+  .wrap{max-width:980px;margin:0 auto;padding:24px;}
+  header{display:flex;align-items:center;gap:12px;padding-bottom:18px;border-bottom:1px solid var(--line);}
+  .logo{width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,var(--forest-700),var(--forest));color:#fff;display:grid;place-items:center;font-weight:800;}
+  h1{font-family:var(--serif);font-size:22px;margin:0;color:var(--forest);}
+  .sub{font-size:12px;color:var(--sage);}
+  .bar{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin:18px 0;}
+  .pill{background:#fff;border:1px solid var(--line);border-radius:999px;padding:6px 14px;font-size:13px;color:var(--ink-soft);}
+  .pill b{color:var(--forest);}
+  .spacer{flex:1;}
+  select,input{font-family:var(--sans);border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:14px;background:#fff;color:var(--ink);}
+  .task{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin-bottom:14px;box-shadow:0 4px 16px rgba(45,74,43,.04);}
+  .t-top{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+  .rbadge{font-size:12px;font-weight:600;color:#fff;border-radius:6px;padding:3px 10px;}
+  .t-title{font-family:var(--serif);font-size:18px;color:var(--forest);font-weight:700;}
+  .t-meta{color:var(--sage);font-size:12px;margin-left:auto;}
+  .kv{display:flex;flex-wrap:wrap;gap:8px 22px;font-size:14px;color:var(--ink-soft);margin:8px 0 14px;}
+  .kv b{color:var(--ink);}
+  .acts{display:flex;flex-wrap:wrap;gap:10px;align-items:center;}
+  .btn{border:none;border-radius:9px;padding:10px 18px;font-size:14px;font-weight:600;cursor:pointer;}
+  .btn-ok{background:var(--forest);color:#fff;}
+  .btn-fix{background:var(--clay);color:#fff;}
+  .btn-no{background:#fff;color:#9a4b2e;border:1px solid #e7d0c6;}
+  .fix-price{width:110px;}
+  .empty{text-align:center;color:var(--sage);padding:60px 0;}
+  .done{color:var(--forest-700);font-size:13px;}
+  .err{color:var(--clay);font-size:13px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo">绿</div>
+    <div><h1>人工复核控制台</h1><div class="sub">即刻小绿 · 运营端</div></div>
+    <div class="spacer"></div>
+    <input id="operator" placeholder="复核人姓名" style="width:140px" />
+  </header>
+
+  <div class="bar">
+    <span class="pill">待复核 <b id="c-pending">–</b></span>
+    <span class="pill">已通过 <b id="c-approved">–</b></span>
+    <span class="pill">已修正 <b id="c-corrected">–</b></span>
+    <span class="pill">已驳回 <b id="c-rejected">–</b></span>
+    <div class="spacer"></div>
+    <select id="filter" onchange="load()">
+      <option value="pending">待复核</option>
+      <option value="corrected">已修正</option>
+      <option value="approved">已通过</option>
+      <option value="rejected">已驳回</option>
+    </select>
+  </div>
+
+  <div id="list"></div>
+</div>
+
+<script>
+const API = "";
+const REASON = {
+  low_confidence: { text: "低置信度", color: "#b06a3b" },
+  seller_price_higher: { text: "卖家报价偏高", color: "#8a4b34" },
+  reject: { text: "建议拒收", color: "#9a4b2e" },
+};
+const yuan = (n) => (n === null || n === undefined) ? "—" : "¥" + Number(n).toFixed(2);
+
+async function api(method, path, body) {
+  const r = await fetch(API + path, {
+    method, headers: { "Content-Type": "application/json" },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  if (!r.ok) throw new Error((await r.json().catch(()=>({}))).detail || ("HTTP " + r.status));
+  return r.json();
+}
+
+async function loadSummary() {
+  try {
+    const s = await api("GET", "/review/summary");
+    document.getElementById("c-pending").textContent = s.pending || 0;
+    document.getElementById("c-approved").textContent = s.approved || 0;
+    document.getElementById("c-corrected").textContent = s.corrected || 0;
+    document.getElementById("c-rejected").textContent = s.rejected || 0;
+  } catch (e) {}
+}
+
+async function load() {
+  loadSummary();
+  const status = document.getElementById("filter").value;
+  const list = document.getElementById("list");
+  list.innerHTML = '<div class="empty">加载中…</div>';
+  try {
+    const tasks = await api("GET", "/review/tasks?status=" + status);
+    if (!tasks.length) { list.innerHTML = '<div class="empty">没有' + statusLabel(status) + '的任务</div>'; return; }
+    list.innerHTML = tasks.map(render).join("");
+  } catch (e) {
+    list.innerHTML = '<div class="empty err">加载失败：' + e.message + '</div>';
+  }
+}
+function statusLabel(s){return {pending:"待复核",corrected:"已修正",approved:"已通过",rejected:"已驳回"}[s]||s;}
+
+function render(t) {
+  const r = REASON[t.reason] || { text: t.reason, color: "#7d8471" };
+  const p = t.payload || {};
+  const seller = p.seller_price;
+  const conf = (p.condition && p.condition.confidence) || (p.recognize && p.recognize.confidence);
+  const editable = t.status === "pending";
+  const kv = [];
+  kv.push(`品相 <b>${t.condition_level || "—"}</b>`);
+  kv.push(`AI 估价 <b>${yuan(t.ai_price)}</b>`);
+  if (seller !== undefined && seller !== null) kv.push(`卖家报价 <b>${yuan(seller)}</b>`);
+  if (conf !== undefined && conf !== null) kv.push(`置信度 <b>${Math.round(conf*100)}%</b>`);
+  kv.push(`记录 #${t.record_id || "—"}`);
+
+  const actions = editable ? `
+    <button class="btn btn-ok" onclick="resolve(${t.id},'approve')">通过</button>
+    <input class="fix-price" type="number" step="0.01" placeholder="新回收价" id="price-${t.id}" />
+    <button class="btn btn-fix" onclick="correct(${t.id})">修正</button>
+    <button class="btn btn-no" onclick="resolve(${t.id},'reject')">驳回</button>
+    <span id="msg-${t.id}" class="done"></span>`
+    : `<span class="done">${statusLabel(t.status)}${t.operator ? " · " + t.operator : ""}${t.note ? " · " + t.note : ""}</span>`;
+
+  return `<div class="task">
+    <div class="t-top">
+      <span class="rbadge" style="background:${r.color}">${r.text}</span>
+      <span class="t-title">${t.book_title || "未识别书目"}</span>
+      <span class="t-meta">${(t.created_at || "").replace("T"," ").slice(0,16)}</span>
+    </div>
+    <div class="kv">${kv.join("")}</div>
+    <div class="acts">${actions}</div>
+  </div>`;
+}
+
+function op(){ return document.getElementById("operator").value.trim(); }
+
+async function resolve(id, action) {
+  try {
+    await api("POST", "/review/tasks/" + id + "/resolve", { action, operator: op() });
+    load();
+  } catch (e) { setMsg(id, e.message, true); }
+}
+async function correct(id) {
+  const v = parseFloat(document.getElementById("price-" + id).value);
+  if (isNaN(v)) { setMsg(id, "请输入新回收价", true); return; }
+  try {
+    await api("POST", "/review/tasks/" + id + "/resolve", { action: "correct", new_price: v, operator: op() });
+    load();
+  } catch (e) { setMsg(id, e.message, true); }
+}
+function setMsg(id, text, isErr) {
+  const el = document.getElementById("msg-" + id);
+  if (el) { el.textContent = text; el.className = isErr ? "err" : "done"; }
+}
+
+load();
+</script>
+</body>
+</html>

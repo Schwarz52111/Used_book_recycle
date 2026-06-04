@@ -1,12 +1,16 @@
 <view class="wrap" wx:if="{{item}}">
   <view wx:if="{{!done}}">
     <view class="card detail">
-      <view class="cover" style="background: linear-gradient(150deg, {{c1}}, {{c2}})">
-        <text class="cv-kicker">二手书</text>
-        <text class="cv-title">{{item.title || '二手书'}}</text>
-        <view class="cv-rule"></view>
-        <text class="cv-foot">即刻小绿 · 校园循环</text>
+      <view class="cover-box">
+        <image wx:if="{{coverUrl && !coverFailed}}" class="cover-img" src="{{coverUrl}}" mode="aspectFit" binderror="onCoverError" />
+        <view wx:else class="cover" style="background: linear-gradient(150deg, {{c1}}, {{c2}})">
+          <text class="cv-kicker">二手书</text>
+          <text class="cv-title">{{item.title || '二手书'}}</text>
+          <view class="cv-rule"></view>
+          <text class="cv-foot">即刻小绿 · 校园循环</text>
+        </view>
       </view>
+      <view class="d-title">{{item.title || '二手书'}}</view>
       <view class="isbn muted">ISBN {{item.isbn || '—'}}</view>
       <view class="line">
         <text class="badge" style="background: {{condColor}}">{{condLabel}}</text>

@@ -20,7 +20,7 @@ function coverPair(seed) {
 }
 
 Page({
-  data: { item: null, condLabel: "", condColor: "", priceText: "", c1: "", c2: "", paying: false, done: false, orderNo: "", error: "" },
+  data: { item: null, condLabel: "", condColor: "", priceText: "", c1: "", c2: "", coverUrl: "", coverFailed: false, paying: false, done: false, orderNo: "", error: "" },
 
   onLoad() {
     const it = app.globalData.selected;
@@ -28,9 +28,19 @@ Page({
       this.setData({ error: "未选择书籍" });
       return;
     }
-    const c = CONDITION[it.condition_level] || { label: it.condition_level, color: "#7d8471" };
+    const c = CONDITION[it.condition_level] || { label: it.condition_level, color: "#8a9a86" };
     const [c1, c2] = coverPair(it.title || String(it.id));
-    this.setData({ item: it, condLabel: c.label, condColor: c.color, c1, c2, priceText: "¥" + Number(it.sale_price || 0).toFixed(2) });
+    const cover = it.cover_url
+      || (it.isbn ? `https://covers.openlibrary.org/b/isbn/${it.isbn}-L.jpg?default=false` : "");
+    this.setData({
+      item: it, condLabel: c.label, condColor: c.color, c1, c2,
+      coverUrl: cover, coverFailed: false,
+      priceText: "¥" + Number(it.sale_price || 0).toFixed(2),
+    });
+  },
+
+  onCoverError() {
+    this.setData({ coverFailed: true });
   },
 
   buy() {

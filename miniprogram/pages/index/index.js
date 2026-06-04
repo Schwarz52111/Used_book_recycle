@@ -20,11 +20,24 @@ function coverPair(seed) {
   return COVER_PALETTE[h % COVER_PALETTE.length];
 }
 
+function decorate(it) {
+  const c = CONDITION[it.condition_level] || { label: it.condition_level, color: "#8a9a86" };
+  const [c1, c2] = coverPair(it.title || String(it.id));
+  const cover = it.cover_url
+    || (it.isbn ? `https://covers.openlibrary.org/b/isbn/${it.isbn}-L.jpg?default=false` : "");
+  return Object.assign({}, it, {
+    condLabel: c.label, condColor: c.color,
+    priceText: "¥" + Number(it.sale_price || 0).toFixed(2),
+    coverUrl: cover, coverFailed: false, c1, c2,
+  });
+}
+
 Page({
-  data: { items: [], loading: true, error: "" },
+  data: { items: [], recos: [], loading: true, error: "" },
 
   onShow() {
     this.load();
+    this.loadRecos();
   },
 
   load() {
@@ -32,19 +45,23 @@ Page({
     const mid = encodeURIComponent(app.globalData.machineId);
     app
       .api("GET", "/inventory?status=in_stock&machine_id=" + mid)
-      .then((items) => {
-        const list = (items || []).map((it) => {
-          const c = CONDITION[it.condition_level] || { label: it.condition_level, color: "#7d8471" };
-          const [c1, c2] = coverPair(it.title || String(it.id));
-          return Object.assign({}, it, {
-            condLabel: c.label, condColor: c.color,
-            priceText: "¥" + Number(it.sale_price || 0).toFixed(2),
-            c1, c2,
-          });
-        });
-        this.setData({ items: list, loading: false });
-      })
+      .then((items) => this.setData({ items: (items || []).map(decorate), loading: false }))
       .catch((e) => this.setData({ error: e.message, loading: false }));
+  },
+
+  loadRecos() {
+    const oid = app.globalData.openid || "";
+    app
+      .api("GET", "/recommend?limit=6&openid=" + encodeURIComponent(oid))
+      .then((recos) => this.setData({ recos: (recos || []).map(decorate) }))
+      .catch(() => {});
+  },
+
+  onCoverError(e) {
+    this.setData({ ["items[" + e.currentTarget.dataset.idx + "].coverFailed"]: true });
+  },
+  onRecoCoverError(e) {
+    this.setData({ ["recos[" + e.currentTarget.dataset.idx + "].coverFailed"]: true });
   },
 
   openDetail(e) {

@@ -121,6 +121,16 @@ Page({
     this.setData({ editPrice: e.detail.value });
   },
 
+  incPrice() {
+    const v = (parseFloat(this.data.editPrice) || 0) + 1;
+    this.setData({ editPrice: v.toFixed(2) });
+  },
+
+  decPrice() {
+    const v = Math.max(0, (parseFloat(this.data.editPrice) || 0) - 1);
+    this.setData({ editPrice: v.toFixed(2) });
+  },
+
   confirmRecycle() {
     const r = this.data.result;
     if (!r || !r.canRecycle) return;

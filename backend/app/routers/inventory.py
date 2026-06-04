@@ -56,6 +56,7 @@ def _to_item(it) -> InventoryItem:
         condition_level=it.condition_level,
         cost_price=float(it.cost_price or 0),
         sale_price=float(it.sale_price or 0),
+        cover_url=(it.book.cover_url if it.book else "") or "",
         machine_id=it.machine_id,
         slot_code=it.slot_code,
         status=it.status.value,
