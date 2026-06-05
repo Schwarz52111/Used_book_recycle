@@ -130,8 +130,30 @@
   .pcard { background: var(--paper); border:1px solid var(--line); border-radius: 12px; padding: 16px; cursor:pointer; transition:.15s; }
   .pcard:hover { border-color: var(--olive); box-shadow: 0 8px 22px rgba(45,74,43,.07); }
   .pcard:active { transform: translateY(1px); }
-  .pcard .cover { height: 104px; border-radius: 8px; background: var(--olive-soft); display:grid; place-items:center; color: var(--sage); }
-  .pcard .cover .ic { width: 40px; height:40px; stroke-width:1.2; }
+  .pcard .cover { position:relative; height: 150px; border-radius: 8px; overflow:hidden; background: var(--olive-soft); }
+  .cover .cv-img { width:100%; height:100%; object-fit:cover; display:block; }
+  .cover .cv-fb { width:100%; height:100%; place-items:center; color: var(--sage); }
+  .cover .cv-fb .ic { width: 40px; height:40px; stroke-width:1.2; }
+  .cover-lg { position:relative; width:150px; height:210px; margin:0 auto 6px; border-radius:10px; overflow:hidden; background: var(--olive-soft); box-shadow:0 8px 22px rgba(45,74,43,.12); }
+  .cover-lg .cv-img { width:100%; height:100%; object-fit:cover; }
+  .cover-lg .cv-fb { width:100%; height:100%; place-items:center; color: var(--sage); }
+
+  /* 搜索 + 分类 */
+  .ksearch { display:flex; gap:10px; margin: 6px 0 14px; }
+  .ksearch input { flex:1; border:1px solid var(--line); border-radius:10px; padding:14px 18px; font-size:16px; background:#fff; color:var(--ink); }
+  .kchips { display:flex; flex-wrap:wrap; gap:10px; margin-bottom:18px; }
+  .kchip { background:#fff; border:1px solid var(--line); color:var(--ink-soft); border-radius:999px; padding:8px 18px; font-size:14px; cursor:pointer; }
+  .kchip.on { background: var(--forest); color:#fff; border-color: var(--forest); }
+
+  /* 卖家改价 */
+  .kprice { background: var(--clay-soft); border-radius: 12px; padding: 18px 20px; margin: 18px 0 4px; }
+  .kp-top { display:flex; justify-content:space-between; align-items:baseline; color: var(--clay); font-weight:600; }
+  .kp-ai { font-size:13px; color:#9a7c66; font-weight:400; }
+  .kp-step { display:flex; align-items:center; gap:12px; margin-top:12px; }
+  .kp-step button { width:48px; height:48px; border:1px solid #e0cdbe; background:#fff; color:var(--clay); font-size:26px; border-radius:10px; cursor:pointer; }
+  .kp-unit { font-size:24px; color:var(--clay); font-weight:700; }
+  .kp-step input { flex:1; text-align:center; font-size:30px; font-weight:800; color:var(--clay); border:1px solid #e7d8cb; border-radius:10px; padding:8px; background:#fff; }
+  .kp-sub { font-size:12.5px; color:var(--ink-soft); margin-top:12px; line-height:1.5; }
   .pcard b { font-family: var(--serif); display:block; margin-top:12px; font-size:16px; line-height:1.35; color: var(--forest); }
   .pcard .sub { color: var(--sage); font-size:12.5px; margin-top:3px; }
   .pcard .row { display:flex; justify-content:space-between; align-items:center; margin-top:12px; }
@@ -232,6 +254,11 @@
         <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h2l2.2 11.5a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.2L21 7H6"/><circle cx="9.5" cy="20" r="1.3"/><circle cx="18" cy="20" r="1.3"/></svg>
         在库二手书
       </div>
+      <div class="ksearch">
+        <input id="kq" placeholder="搜书名 / 作者 / ISBN" oninput="onKq()" onkeydown="if(event.key==='Enter')openBuy()" />
+        <button class="btn btn-primary" style="width:auto;padding:12px 22px" onclick="openBuy()">搜索</button>
+      </div>
+      <div id="kchips" class="kchips"></div>
       <div id="buyLoading" class="center" style="display:none;"><div class="spinner"></div><p style="color:var(--ink-soft)">加载库存中…</p></div>
       <div id="grid" class="grid"></div>
       <div id="buyEmpty" class="empty" style="display:none;">
@@ -336,17 +363,24 @@ function renderResult(data) {
     ? `<div class="review-banner">${ICON.alert}<span>本次评估置信度较低，已转人工复核，最终价格以复核为准。</span></div>` : "";
 
   const priceBox = p ? `
-    <div class="price-box">
-      <div class="price-main"><div class="num">${yuan(p.recycle_price)}</div><div class="lbl">回收价 · 给你</div></div>
-      <div class="price-sub"><div class="num">${yuan(p.sale_price)}</div><div class="lbl">预计上架售价</div></div>
+    <div class="kprice">
+      <div class="kp-top"><span>回收价 · 给你</span><span class="kp-ai">AI 估价 ${yuan(p.recycle_price)}</span></div>
+      <div class="kp-step">
+        <button onclick="stepPrice(-1)">−</button>
+        <span class="kp-unit">¥</span><input id="kioskPrice" type="number" step="0.01" value="${Number(p.recycle_price).toFixed(2)}"/>
+        <button onclick="stepPrice(1)">＋</button>
+      </div>
+      <div class="kp-sub">预计上架售价 ${yuan(p.sale_price)} · 可手动调整，高于 AI 估价将转人工复核</div>
     </div>
     ${p.reason ? `<div class="reason">${p.reason}</div>` : ""}`
     : `<div class="review-banner">${ICON.alert}<span>${(data.admission && !data.admission.accepted) ? data.admission.reason : "该书被判定为「" + cl.label + "」，暂不回收。"}</span></div>`;
 
   const actions = (p && !c.rejected) ? `
-    <div class="btn-row" style="margin-top:20px;">
+    <input id="kioskPhone" type="tel" inputmode="numeric" placeholder="手机号 · 回收款到账此账户（扫码登录后可同步到小程序）"
+      style="width:100%;margin-top:16px;border:1px solid var(--line);border-radius:10px;padding:14px 16px;font-size:15px"/>
+    <div class="btn-row" style="margin-top:12px;">
       <button class="btn btn-ghost" onclick="resetSell()">重拍</button>
-      <button class="btn btn-primary" onclick="confirmRecycle()">确认回收 ${yuan(p.recycle_price)}</button>
+      <button class="btn btn-primary" onclick="confirmRecycle()">确认回收</button>
     </div>`
     : `<button class="btn btn-ghost" style="margin-top:16px" onclick="resetSell()">换一本</button>`;
 
@@ -367,44 +401,83 @@ function renderResult(data) {
     ${actions}`;
   document.getElementById("sellResult").style.display = "block";
 }
+function stepPrice(d) {
+  const el = document.getElementById("kioskPrice");
+  if (!el) return;
+  el.value = Math.max(0, (parseFloat(el.value) || 0) + d).toFixed(2);
+}
 async function confirmRecycle() {
   if (!lastRecordId) return;
+  const el = document.getElementById("kioskPrice");
+  const sp = el ? parseFloat(el.value) : NaN;
+  const phoneEl = document.getElementById("kioskPhone");
+  const phone = phoneEl ? phoneEl.value.trim() : "";
   try {
     const r = await fetch(API + "/inventory/intake", {
       method: "POST", headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({ record_id: lastRecordId, machine_id: MACHINE_ID })
+      body: JSON.stringify({ record_id: lastRecordId, machine_id: MACHINE_ID, seller_phone: phone, seller_price: isNaN(sp) ? null : sp })
     });
     if (!r.ok) throw new Error((await r.json().catch(()=>({}))).detail || ("HTTP " + r.status));
     document.getElementById("sellResult").innerHTML = `
       <div class="center"><div style="color:var(--forest)">${ICON.check}</div>
       <h2>回收成功</h2>
-      <p style="color:var(--ink-soft)">请将书放入投书口，金额将转入你的账户。</p>
+      <p style="color:var(--ink-soft)">${phone ? "回收款已转入手机号 " + phone + " 的账户。" : "未填手机号，本次回收款暂未入账。"}请将书放入投书口。</p>
       <p style="color:var(--sage);font-size:13px">感谢你为绿色校园出一份力</p>
       <button class="btn btn-primary" style="margin-top:14px" onclick="resetSell(); go('home')">完成</button></div>`;
   } catch (err) { alert("入库失败：" + err.message); }
 }
 
 /* ---------- 买书 ---------- */
+let kQuery = "", kCategory = "";
+function coverUrlOf(it) {
+  return it.cover_url || (it.isbn ? `https://covers.openlibrary.org/b/isbn/${it.isbn}-L.jpg?default=false` : "");
+}
+function coverCell(it, cls) {
+  const url = coverUrlOf(it);
+  return `<div class="${cls}">
+    ${url ? `<img class="cv-img" src="${url}" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'"/>` : ""}
+    <div class="cv-fb" style="${url ? 'display:none' : 'display:grid'}">${ICON.book}</div>
+  </div>`;
+}
+function onKq() { kQuery = document.getElementById("kq").value; }
+async function loadKchips() {
+  try {
+    const cats = await (await fetch(API + "/inventory/categories?machine_id=" + encodeURIComponent(MACHINE_ID))).json();
+    const all = `<span class="kchip ${kCategory===''?'on':''}" onclick="pickCat('')">全部</span>`;
+    document.getElementById("kchips").innerHTML = all + (cats||[]).map(c =>
+      `<span class="kchip ${kCategory===c?'on':''}" onclick="pickCat('${c}')">${c}</span>`).join("");
+  } catch (e) {}
+}
+function pickCat(c) { kCategory = (kCategory === c ? "" : c); openBuy(); }
 async function openBuy() {
   go('buy');
+  loadKchips();
   document.getElementById("grid").innerHTML = "";
   document.getElementById("buyEmpty").style.display = "none";
   document.getElementById("buyLoading").style.display = "block";
   try {
-    const r = await fetch(API + "/inventory?status=in_stock&machine_id=" + encodeURIComponent(MACHINE_ID));
-    renderGrid(await r.json());
+    let url = "/inventory?status=in_stock&machine_id=" + encodeURIComponent(MACHINE_ID);
+    if (kQuery) url += "&q=" + encodeURIComponent(kQuery);
+    if (kCategory) url += "&category=" + encodeURIComponent(kCategory);
+    renderGrid(await (await fetch(API + url)).json());
   } catch (err) {
     document.getElementById("grid").innerHTML = `<div class="err">加载失败：${err.message}</div>`;
   } finally { document.getElementById("buyLoading").style.display = "none"; }
 }
 function renderGrid(items) {
-  if (!items || !items.length) { document.getElementById("buyEmpty").style.display = "block"; return; }
+  if (!items || !items.length) {
+    document.getElementById("buyEmpty").style.display = "block";
+    document.getElementById("buyEmpty").querySelector("div").textContent =
+      (kQuery || kCategory) ? "没有匹配的书，换个关键词或分类" : "当前暂无在库书籍，先去卖几本吧";
+    return;
+  }
+  document.getElementById("buyEmpty").style.display = "none";
   document.getElementById("grid").innerHTML = items.map(it => {
     const cl = cond(it.condition_level);
     return `<div class="pcard" onclick='openBuyModal(${JSON.stringify(it).replace(/'/g,"&#39;")})'>
-      <div class="cover">${ICON.book.replace('class="ic"','class="ic"')}</div>
+      ${coverCell(it, "cover")}
       <b>${it.title || "二手书"}</b>
-      <div class="sub">${it.isbn || ""}</div>
+      <div class="sub">${it.category || it.isbn || ""}</div>
       <div class="row"><span class="badge" style="background:${cl.color};font-size:12px;padding:3px 10px">${cl.label}</span>
       <span class="pp">${yuan(it.sale_price)}</span></div>
     </div>`;
@@ -413,7 +486,7 @@ function renderGrid(items) {
 function openBuyModal(it) {
   const cl = cond(it.condition_level);
   document.getElementById("buyModalBody").innerHTML = `
-    <div style="color:var(--sage)">${ICON.book}</div>
+    ${coverCell(it, "cover-lg")}
     <h2 style="margin:10px 0">${it.title || "二手书"}</h2>
     <span class="badge" style="background:${cl.color}">${cl.label}</span>
     <div class="price-main" style="margin:18px 0;text-align:center"><div class="num">${yuan(it.sale_price)}</div><div class="lbl">售价</div></div>

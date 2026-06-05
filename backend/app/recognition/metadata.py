@@ -83,6 +83,36 @@ def _normalize(raw: dict, isbn: str) -> dict | None:
     }
 
 
+def create_book_from_vlm(db: Session, data: dict) -> Book:
+    """用 VLM 识别到的真实字段新建书目（库里没有对应书时），保证显示真实书名。
+
+    无可用 ISBN 时生成占位 ISBN 以满足唯一约束；价格留空，由人工复核补全。
+    """
+    import uuid
+
+    isbn = "".join(c for c in (data.get("isbn") or "") if c.isdigit())
+    if len(isbn) not in (10, 13):
+        isbn = "TMP" + uuid.uuid4().hex[:12]
+    existing = db.scalar(select(Book).where(Book.isbn == isbn))
+    if existing:
+        return existing
+    book = Book(
+        isbn=isbn,
+        title=(data.get("title") or "未知书名")[:255],
+        author=data.get("author", "") or "",
+        publisher=data.get("publisher", "") or "",
+        category="",
+        original_price=0,
+        market_price=0,
+        base_recycle_rate=get_settings().default_base_recycle_rate,
+        source="vlm",
+    )
+    db.add(book)
+    db.commit()
+    db.refresh(book)
+    return book
+
+
 def upsert_book_from_metadata(db: Session, data: dict) -> Book:
     """把元数据写入 books 表（已存在则返回现有行）。"""
     book = db.scalar(select(Book).where(Book.isbn == data["isbn"]))

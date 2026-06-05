@@ -100,6 +100,7 @@ class IntakeRequest(BaseModel):
     slot_code: str = ""
     rfid_tag: str = ""
     seller_openid: str = ""   # 卖家微信 openid，填了则回收金额入其账户
+    seller_phone: str = ""    # 设备端无登录时用手机号标识卖家账户
     seller_price: float | None = None  # 卖家改价；None=采用 AI 估价
 
 

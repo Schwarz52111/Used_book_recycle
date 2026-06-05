@@ -25,8 +25,18 @@ def intake_endpoint(req: IntakeRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     # 回收到账：把回收价(=库存成本价)计入卖家余额，并加信用分（正常回收 +2）
+    # 卖家身份：优先 openid（小程序），其次手机号（设备端无登录时用）。
+    seller = None
     if req.seller_openid:
         seller = get_or_create_user(db, req.seller_openid)
+    elif req.seller_phone:
+        phone = "".join(c for c in req.seller_phone if c.isdigit())
+        if phone:
+            seller = get_or_create_user(db, "phone:" + phone)
+            if not seller.phone:
+                seller.phone = phone
+                db.commit()
+    if seller:
         credit_recycle_payout(db, seller, float(item.cost_price or 0), req.record_id)
         adjust_credit(db, seller, 2)
 

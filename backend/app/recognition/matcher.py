@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from app.models import Book
 
-MATCH_THRESHOLD = 0.58
+MATCH_THRESHOLD = 0.72  # 提高阈值，避免把新书误配成库里已有的书
 
 
 def normalize_text(value: str) -> str:

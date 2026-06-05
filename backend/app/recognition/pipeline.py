@@ -87,6 +87,14 @@ def recognize(db: Session, image_bytes: bytes, vlm: VLMClient, review_threshold:
                 confidence=conf, recognized_text=str(vlm_res),
                 need_review=conf < review_threshold,
             )
+        # 库里没有对得上的 → 用 VLM 识别到的真实信息新建书目（必复核），避免误配错书
+        if vlm_res["title"]:
+            book = metadata.create_book_from_vlm(db, vlm_res)
+            return RecognizeResult(
+                matched=True, book=_to_info(book), method="vlm_new",
+                confidence=round(max(0.5, vlm_res["confidence"]), 4),
+                recognized_text=str(vlm_res), need_review=True,
+            )
 
     # 未命中
     return RecognizeResult(
