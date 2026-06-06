@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>二手图书买家端</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <p class="eyebrow">Buyer Store</p>
+      <h1>二手图书买家端</h1>
+    </div>
+    <div class="top-actions">
+      <a class="nav-link" href="/">识别入库端</a>
+      <div class="server-state ok">买家端</div>
+    </div>
+  </header>
+
+  <main class="buyer-shell">
+    <section class="store-panel">
+      <div class="panel-heading">
+        <div>
+          <p class="eyebrow">Inventory</p>
+          <h2>已入库图书</h2>
+        </div>
+        <button class="button ghost" id="refreshBooks">刷新</button>
+      </div>
+      <div class="book-list" id="bookList">
+        <div class="record-empty">正在加载库存...</div>
+      </div>
+    </section>
+
+    <aside class="buyer-side">
+      <section class="result-panel">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">Orders</p>
+            <h2>订单与退款</h2>
+          </div>
+        </div>
+        <form class="order-search" id="orderSearch">
+          <input id="orderPhone" type="tel" placeholder="输入手机号查询订单">
+          <button class="button" type="submit">查询</button>
+        </form>
+        <div class="orders-list" id="ordersList">
+          <div class="record-empty">暂无订单</div>
+        </div>
+      </section>
+    </aside>
+  </main>
+
+  <script src="buyer.js"></script>
+</body>
+</html>

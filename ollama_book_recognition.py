@@ -16,6 +16,7 @@ class LocalAIBookResult(BaseModel):
     isbn: str = Field(default="")
     condition_level: str = Field(default="")
     damage_description: str = Field(default="")
+    recycle_price_rate: float = Field(default=0.0)
     confidence: float = Field(default=0.0)
 
     @classmethod
@@ -71,6 +72,7 @@ def recognize_book_with_ollama(frame, config: OllamaRecognizerConfig) -> Optiona
 你是二手书自助回收设备的图像识别模块。请根据图片中可见的书籍封面信息识别书籍。
 只根据图片可见内容回答，不确定的字段留空，不要编造。
 请严格输出一个 JSON 对象，不要输出解释文字。
+必须包含下面所有字段，字段名不能改，不能省略 recycle_price_rate。
 JSON 字段如下：
 {
   "title": "书名",
@@ -79,8 +81,12 @@ JSON 字段如下：
   "isbn": "ISBN，若图片不可见则留空",
   "condition_level": "like_new/good/acceptable/damaged 之一，不确定留空",
   "damage_description": "封面可见破损、污渍、折角、磨损情况",
+  "recycle_price_rate": 0.0,
   "confidence": 0.0到1.0之间的识别置信度
 }
+其中 recycle_price_rate 是基于图片品相给出的回收价系数，必须是数字。近全新0.90-1.00，良好0.75-0.90，可接受0.55-0.75，破损0.20-0.50。
+如果 condition_level 是 good，recycle_price_rate 通常应在 0.75 到 0.90 之间，例如 0.85。
+如果封面无明显破损、污渍或折角，condition_level 应为 good 或 like_new，recycle_price_rate 不应低于 0.80。
 """
 
     payload = {
@@ -120,10 +126,19 @@ JSON 字段如下：
 
     raw_text = body.get("response", "")
     try:
-        result = LocalAIBookResult.from_payload(extract_json_object(raw_text))
+        parsed = extract_json_object(raw_text)
+        if "recycle_price_rate" not in parsed:
+            print("本地 AI 返回缺少 recycle_price_rate，已拒绝本次结果。")
+            print(f"原始返回：{raw_text[:500]}")
+            return None
+        result = LocalAIBookResult.from_payload(parsed)
     except (ValueError, json.JSONDecodeError, ValidationError) as exc:
         print(f"本地 AI 返回格式无法解析：{exc}")
         print(f"原始返回：{raw_text[:500]}")
+        return None
+
+    if not 0.2 <= result.recycle_price_rate <= 1.0:
+        print(f"本地 AI 返回的 recycle_price_rate 不合理：{result.recycle_price_rate}")
         return None
 
     return result

@@ -26,6 +26,47 @@ python init_mysql_database.py --user root --password "123456"
 mysql -u root -p < mysql_schema.sql
 ```
 
+## 运行网页端识别
+
+网页端可以在浏览器中打开摄像头，点击“识别图书”后把当前画面发送到本地后端，后端会复用现有 ISBN、OCR、Ollama 辅助识别、品相评估和估价逻辑，并把回收记录写入数据库。
+
+如果已经创建项目虚拟环境并安装依赖，可以直接执行：
+
+```powershell
+Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '*web_app.py*' -and $_.Name -like 'python*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }; Start-Process -WindowStyle Hidden -FilePath .\.venv\Scripts\python.exe -ArgumentList @('web_app.py','--db-user','root','--db-password','123456') -WorkingDirectory (Get-Location); Start-Process "http://127.0.0.1:5000"
+```
+
+如果没有使用虚拟环境，可以执行：
+
+```powershell
+python web_app.py --db-user root --db-password "123456"
+```
+
+然后在浏览器打开：
+
+```text
+http://127.0.0.1:5000
+```
+
+浏览器摄像头权限需要通过 `http://127.0.0.1:5000` 访问页面授予，直接双击打开 `index.html` 可能无法正常调用摄像头。
+
+买家端页面：
+
+```text
+http://127.0.0.1:5000/buyer
+```
+
+买家端会展示已经识别入库的图书。新的识别记录会保存当次摄像头截图，买家端列表和详情页会展示这张图片；旧记录没有截图时会自动生成一张带书名的封面图。
+
+买家端购买流程：
+
+1. 在买家端点击图书卡片，进入图书详情页。
+2. 图书详情页展示图片、书名、ISBN、作者、出版社、分类、市场参考价、售价、品相和入库时间。
+3. 买家填写姓名和手机号后点击“加入购物车”。
+4. 页面跳转到购物车，购物车显示订单号、买家信息、图书信息和结算金额。
+5. 买家可以在购物车中支付或取消订单。
+6. 支付后的订单可以在订单记录中查看，并可申请退款；退款后图书会重新回到可购买状态。
+
 ## 运行摄像头识别
 
 ```powershell
@@ -117,3 +158,4 @@ python camera_book_recognition.py
 - `books`：书籍基础信息和市场参考价。
 - `condition_rules`：品相等级与估价系数。
 - `recycle_records`：每次识别和估价记录。
+- `buyer_orders`：买家购买和退款订单记录。

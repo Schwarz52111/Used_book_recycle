@@ -54,6 +54,15 @@ class Book:
     base_recycle_rate: float
 
 
+@dataclass
+class RecognitionResult:
+    book: Optional[Book]
+    recognized_text: str
+    ai_condition_level: str = ""
+    ai_damage_description: str = ""
+    ai_recycle_price_rate: float = 0.0
+
+
 def get_connection(config: dict[str, Any]) -> mysql.connector.MySQLConnection:
     return mysql.connector.connect(**config)
 
@@ -101,12 +110,131 @@ def partial_similarity(needle: str, haystack: str) -> float:
     return best
 
 
+def title_similarity(db_title: str, recognized_title: str) -> float:
+    db_title = normalize_text(db_title)
+    recognized_title = normalize_text(recognized_title)
+    if not db_title or not recognized_title:
+        return 0.0
+    if db_title == recognized_title:
+        return 1.0
+    if recognized_title in db_title:
+        return 0.96
+    if db_title in recognized_title:
+        return 0.92
+    return SequenceMatcher(None, db_title, recognized_title).ratio()
+
+
+def field_similarity(db_value: str, recognized_value: str) -> float:
+    db_value = normalize_text(db_value)
+    recognized_value = normalize_text(recognized_value)
+    if not db_value or not recognized_value:
+        return 0.0
+    if db_value == recognized_value:
+        return 1.0
+    if db_value in recognized_value or recognized_value in db_value:
+        return 0.9
+    return SequenceMatcher(None, db_value, recognized_value).ratio()
+
+
+def find_book_by_title(conn: mysql.connector.MySQLConnection, title: str) -> Optional[Book]:
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("SELECT * FROM books")
+    rows = cursor.fetchall()
+    cursor.close()
+
+    recognized_title = normalize_text(title)
+    if not recognized_title:
+        return None
+
+    best_score = 0.0
+    second_score = 0.0
+    best_row = None
+
+    for row in rows:
+        score = title_similarity(row["title"], title)
+        if DEBUG_OCR:
+            print(f"AI书名候选分数: {row['title']} -> {score:.3f}")
+
+        if score > best_score:
+            second_score = best_score
+            best_score = score
+            best_row = row
+        elif score > second_score:
+            second_score = score
+
+    if DEBUG_OCR:
+        print(f"AI书名最佳匹配: {best_row['title'] if best_row else '无'}，分数: {best_score:.3f}")
+
+    if not best_row:
+        return None
+    if best_score < 0.72:
+        return None
+    if second_score and best_score - second_score < 0.06 and best_score < 0.92:
+        return None
+    return row_to_book(best_row)
+
+
 def find_book_by_isbn(conn: mysql.connector.MySQLConnection, isbn: str) -> Optional[Book]:
     cursor = conn.cursor(dictionary=True)
     cursor.execute("SELECT * FROM books WHERE isbn = %s", (isbn,))
     row = cursor.fetchone()
     cursor.close()
     return row_to_book(row) if row else None
+
+
+def find_book_by_fields(
+    conn: mysql.connector.MySQLConnection,
+    title: str = "",
+    author: str = "",
+    publisher: str = "",
+) -> Optional[Book]:
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("SELECT * FROM books")
+    rows = cursor.fetchall()
+    cursor.close()
+
+    recognized_title = normalize_text(title)
+    if not recognized_title:
+        return None
+
+    best_score = 0.0
+    second_score = 0.0
+    best_row = None
+
+    for row in rows:
+        title_score = title_similarity(row["title"], title)
+        author_score = field_similarity(row["author"], author)
+        publisher_score = field_similarity(row["publisher"], publisher)
+        score = title_score * 0.82 + author_score * 0.10 + publisher_score * 0.08
+
+        if DEBUG_OCR:
+            print(
+                "AI候选分数: "
+                f"{row['title']} -> 总分 {score:.3f}, "
+                f"标题 {title_score:.3f}, 作者 {author_score:.3f}, 出版社 {publisher_score:.3f}"
+            )
+
+        if score > best_score:
+            second_score = best_score
+            best_score = score
+            best_row = row
+        elif score > second_score:
+            second_score = score
+
+    if DEBUG_OCR:
+        print(f"AI最佳匹配: {best_row['title'] if best_row else '无'}，分数: {best_score:.3f}")
+
+    if not best_row:
+        return None
+
+    best_title_score = title_similarity(best_row["title"], title)
+    if best_title_score < 0.62:
+        return None
+    if best_score < 0.68:
+        return None
+    if second_score and best_score - second_score < 0.08 and best_title_score < 0.9:
+        return None
+    return row_to_book(best_row)
 
 
 def find_book_by_text(conn: mysql.connector.MySQLConnection, text: str) -> Optional[Book]:
@@ -116,30 +244,46 @@ def find_book_by_text(conn: mysql.connector.MySQLConnection, text: str) -> Optio
     cursor.close()
     normalized = normalize_text(text)
     best_score = 0.0
+    second_score = 0.0
     best_row = None
 
     for row in rows:
-        row_best = 0.0
-        candidates = [
-            row["title"],
-            row["author"],
-            row["publisher"],
-            f'{row["title"]}{row["author"]}',
-            f'{row["title"]}{row["publisher"]}',
-        ]
-        for candidate in candidates:
-            score = partial_similarity(normalize_text(candidate), normalized)
-            row_best = max(row_best, score)
-            if score > best_score:
-                best_score = score
-                best_row = row
+        title_score = partial_similarity(normalize_text(row["title"]), normalized)
+        author_score = field_similarity(row["author"], text)
+        publisher_score = field_similarity(row["publisher"], text)
+        row_best = title_score * 0.84 + author_score * 0.08 + publisher_score * 0.08
+        if row_best > best_score:
+            second_score = best_score
+            best_score = row_best
+            best_row = row
+        elif row_best > second_score:
+            second_score = row_best
         if DEBUG_OCR:
-            print(f"OCR候选分数: {row['title']} -> {row_best:.3f}")
+            print(f"文本候选分数: {row['title']} -> {row_best:.3f}")
 
     if DEBUG_OCR:
-        print(f"OCR最佳匹配: {best_row['title'] if best_row else '无'}，分数: {best_score:.3f}")
+        print(f"文本最佳匹配: {best_row['title'] if best_row else '无'}，分数: {best_score:.3f}")
 
-    return row_to_book(best_row) if best_row and best_score >= 0.58 else None
+    if not best_row:
+        return None
+    if partial_similarity(normalize_text(best_row["title"]), normalized) < 0.62:
+        return None
+    if best_score < 0.68:
+        return None
+    if second_score and best_score - second_score < 0.08:
+        return None
+    return row_to_book(best_row)
+
+
+def choose_condition_level(
+    ai_condition_level: str = "",
+    ai_damage_description: str = "",
+    fallback_condition_level: str = "good",
+) -> str:
+    normalized_level = ai_condition_level.strip().lower()
+    if normalized_level in {"like_new", "good", "acceptable", "damaged"}:
+        return normalized_level
+    return fallback_condition_level
 
 
 def decode_isbn(frame) -> Optional[str]:
@@ -255,17 +399,34 @@ def estimate_condition(frame) -> tuple[str, float, float]:
     return "like_new", damage_score, completeness_score
 
 
-def evaluate_price(conn: mysql.connector.MySQLConnection, book: Book, condition_level: str) -> float:
-    cursor = conn.cursor(dictionary=True)
-    cursor.execute(
-        "SELECT price_factor FROM condition_rules WHERE condition_level = %s",
-        (condition_level,),
-    )
-    row = cursor.fetchone()
-    cursor.close()
-    factor = as_float(row["price_factor"]) if row else 0.5
-    price = book.market_price * book.base_recycle_rate * factor
+def evaluate_price(
+    conn: mysql.connector.MySQLConnection,
+    book: Book,
+    condition_level: str,
+    ai_recycle_price_rate: float = 0.0,
+) -> float:
+    if 0.2 <= ai_recycle_price_rate <= 1.0:
+        return round(max(book.market_price * ai_recycle_price_rate, 1.0), 2)
+
+    condition_price_rates = {
+        "like_new": 0.95,
+        "good": 0.85,
+        "acceptable": 0.70,
+        "damaged": 0.45,
+    }
+    factor = condition_price_rates.get(condition_level, 0.75)
+    price = book.market_price * factor
     return round(max(price, 1.0), 2)
+
+
+def ai_condition_scores(condition_level: str) -> tuple[float, float]:
+    scores = {
+        "like_new": (0.05, 0.98),
+        "good": (0.18, 0.92),
+        "acceptable": (0.42, 0.78),
+        "damaged": (0.82, 0.45),
+    }
+    return scores.get(condition_level, (0.25, 0.86))
 
 
 def save_record(
@@ -276,15 +437,16 @@ def save_record(
     completeness_score: float,
     evaluated_price: float,
     recognized_text: str,
+    image_path: str = "",
 ) -> None:
     cursor = conn.cursor()
     cursor.execute(
         """
         INSERT INTO recycle_records
-            (book_id, condition_level, damage_score, completeness_score, evaluated_price, recognized_text)
-        VALUES (%s, %s, %s, %s, %s, %s)
+            (book_id, condition_level, damage_score, completeness_score, evaluated_price, image_path, recognized_text)
+        VALUES (%s, %s, %s, %s, %s, %s, %s)
         """,
-        (book.id, condition_level, damage_score, completeness_score, evaluated_price, recognized_text[:1000]),
+        (book.id, condition_level, damage_score, completeness_score, evaluated_price, image_path, recognized_text[:1000]),
     )
     conn.commit()
     cursor.close()
@@ -326,47 +488,34 @@ def recognize_from_frame(
     conn: mysql.connector.MySQLConnection,
     frame,
     ai_config: Optional[OllamaRecognizerConfig] = None,
-) -> tuple[Optional[Book], str]:
-    isbn = decode_isbn(frame)
-    if isbn:
-        book = find_book_by_isbn(conn, isbn)
-        if book:
-            return book, f"ISBN:{isbn}"
-
-    text = ocr_frame(frame)
-    if text:
-        book = find_book_by_text(conn, text)
-        if book:
-            return book, text
-
+) -> RecognitionResult:
     if ai_config and ai_config.enabled:
-        print("本地识别未命中，正在调用 Ollama 本地 AI 辅助识别...")
+        print("正在调用 Ollama 本地 AI 识别...")
         ai_result = recognize_book_with_ollama(frame, ai_config)
         if ai_result:
             ai_text = local_ai_result_to_text(ai_result)
             if DEBUG_OCR:
                 print(f"Ollama识别结果: {ai_text}")
 
-            if ai_result.isbn:
-                book = find_book_by_isbn(conn, "".join(ch for ch in ai_result.isbn if ch.isdigit()))
-                if book:
-                    return book, ai_text
-
-            book = find_book_by_text(
-                conn,
-                "\n".join(
-                    [
-                        ai_result.title,
-                        ai_result.author,
-                        ai_result.publisher,
-                        ai_result.damage_description,
-                    ]
-                ),
-            )
+            book = find_book_by_title(conn, ai_result.title)
             if book:
-                return book, ai_text
+                return RecognitionResult(
+                    book,
+                    ai_text,
+                    ai_result.condition_level,
+                    ai_result.damage_description,
+                    ai_result.recycle_price_rate,
+                )
 
-    return None, text if "text" in locals() else ""
+            return RecognitionResult(
+                None,
+                ai_text,
+                ai_result.condition_level,
+                ai_result.damage_description,
+                ai_result.recycle_price_rate,
+            )
+
+    return RecognitionResult(None, "")
 
 
 def run_camera(camera_index: int, db_config: dict[str, Any], ai_config: OllamaRecognizerConfig) -> None:
@@ -393,14 +542,21 @@ def run_camera(camera_index: int, db_config: dict[str, Any], ai_config: OllamaRe
             if key == ord("q"):
                 break
             if key == 32:
-                book, recognized_text = recognize_from_frame(conn, frame, ai_config)
+                result = recognize_from_frame(conn, frame, ai_config)
+                book = result.book
+                recognized_text = result.recognized_text
                 if not book:
                     last_lines = ["No matched book", "Try ISBN barcode or clearer cover"]
                     print("未匹配到数据库中的书籍，可补充 books 表或调整摄像头距离/光线。")
                     continue
 
-                condition_level, damage_score, completeness_score = estimate_condition(frame)
-                price = evaluate_price(conn, book, condition_level)
+                condition_level = choose_condition_level(
+                    result.ai_condition_level,
+                    result.ai_damage_description,
+                    "good",
+                )
+                damage_score, completeness_score = ai_condition_scores(condition_level)
+                price = evaluate_price(conn, book, condition_level, result.ai_recycle_price_rate)
                 save_record(conn, book, condition_level, damage_score, completeness_score, price, recognized_text)
                 print_result(book, condition_level, damage_score, completeness_score, price)
                 last_lines = [
