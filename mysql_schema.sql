@@ -31,6 +31,7 @@ CREATE TABLE IF NOT EXISTS recycle_records (
     damage_score DECIMAL(6, 4) NOT NULL,
     completeness_score DECIMAL(6, 4) NOT NULL,
     evaluated_price DECIMAL(10, 2) NOT NULL,
+    image_path VARCHAR(255),
     recognized_text TEXT,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_recycle_records_book
@@ -38,3 +39,35 @@ CREATE TABLE IF NOT EXISTS recycle_records (
         ON UPDATE CASCADE
         ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS buyer_orders (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    recycle_record_id INT NOT NULL,
+    buyer_name VARCHAR(100) NOT NULL,
+    buyer_phone VARCHAR(50) NOT NULL,
+    sale_price DECIMAL(10, 2) NOT NULL,
+    status VARCHAR(30) NOT NULL DEFAULT 'pending',
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    refunded_at TIMESTAMP NULL DEFAULT NULL,
+    INDEX idx_buyer_orders_record_status (recycle_record_id, status),
+    CONSTRAINT fk_buyer_orders_record
+        FOREIGN KEY (recycle_record_id) REFERENCES recycle_records(id)
+        ON UPDATE CASCADE
+        ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE OR REPLACE VIEW transactions AS
+SELECT
+    o.id AS transaction_id,
+    o.recycle_record_id,
+    b.title,
+    b.isbn,
+    o.buyer_name,
+    o.buyer_phone,
+    o.sale_price,
+    o.status,
+    o.created_at,
+    o.refunded_at
+FROM buyer_orders o
+JOIN recycle_records r ON r.id = o.recycle_record_id
+JOIN books b ON b.id = r.book_id;

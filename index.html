@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>二手图书回收识别</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <p class="eyebrow">Used Book Recycle</p>
+      <h1>二手图书自助回收识别</h1>
+    </div>
+    <div class="top-actions">
+      <a class="nav-link" href="/buyer">买家端</a>
+      <div class="server-state" id="serverState">等待连接</div>
+    </div>
+  </header>
+
+  <main class="app-shell">
+    <section class="camera-panel" aria-label="摄像头识别区域">
+      <div class="video-wrap" id="videoWrap">
+        <video id="camera" autoplay playsinline muted></video>
+        <canvas id="snapshot" hidden></canvas>
+        <div class="camera-empty" id="cameraEmpty">
+          <strong>摄像头未启动</strong>
+          <span>点击“打开摄像头”，将书籍封面或 ISBN 条码放入画面</span>
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <button class="button primary" id="startCamera">打开摄像头</button>
+        <button class="button" id="recognizeBook" disabled>识别图书</button>
+        <button class="button ghost" id="stopCamera" disabled>关闭摄像头</button>
+      </div>
+
+      <p class="hint" id="hint">识别时会截取当前画面，后端会直接使用本地 AI 识别书籍信息并匹配数据库。</p>
+    </section>
+
+    <section class="result-panel" aria-label="识别结果">
+      <div class="panel-heading">
+        <p class="eyebrow">Result</p>
+        <h2>识别结果</h2>
+      </div>
+
+      <div class="empty-result" id="emptyResult">
+        <strong>暂无识别结果</strong>
+        <span>识别成功后会显示图书信息、品相评分和建议回收价。</span>
+      </div>
+
+      <div class="book-result" id="bookResult" hidden>
+        <div class="price-card">
+          <span>建议回收价</span>
+          <strong id="evaluatedPrice">¥0.00</strong>
+        </div>
+
+        <dl class="book-fields">
+          <div>
+            <dt>书名</dt>
+            <dd id="bookTitle">-</dd>
+          </div>
+          <div>
+            <dt>ISBN</dt>
+            <dd id="bookIsbn">-</dd>
+          </div>
+          <div>
+            <dt>作者</dt>
+            <dd id="bookAuthor">-</dd>
+          </div>
+          <div>
+            <dt>出版社</dt>
+            <dd id="bookPublisher">-</dd>
+          </div>
+          <div>
+            <dt>分类</dt>
+            <dd id="bookCategory">-</dd>
+          </div>
+          <div>
+            <dt>市场参考价</dt>
+            <dd id="marketPrice">-</dd>
+          </div>
+          <div>
+            <dt>品相等级</dt>
+            <dd id="conditionLevel">-</dd>
+          </div>
+          <div>
+            <dt>破损评分</dt>
+            <dd id="damageScore">-</dd>
+          </div>
+          <div>
+            <dt>完整度评分</dt>
+            <dd id="completenessScore">-</dd>
+          </div>
+        </dl>
+
+        <details class="recognized-text">
+          <summary>查看识别文本</summary>
+          <pre id="recognizedText"></pre>
+        </details>
+      </div>
+    </section>
+
+    <section class="records-panel" aria-label="最近回收记录">
+      <div class="panel-heading">
+        <p class="eyebrow">Records</p>
+        <h2>最近回收记录</h2>
+      </div>
+      <div class="records-list" id="recordsList">
+        <div class="record-empty">暂无记录</div>
+      </div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

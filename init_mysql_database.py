@@ -12,7 +12,10 @@ BOOKS = [
     ("9787302423287", "数据库系统概论", "王珊、萨师煊", "高等教育出版社", "教材", 42.00, 20.00, 0.36),
     ("9787040589818", "高等数学 第八版 上册", "同济大学数学科学学院", "高等教育出版社", "教材", 49.80, 28.00, 0.36),
     ("9787040588682", "高等数学 第八版 下册", "同济大学数学科学学院", "高等教育出版社", "教材", 43.80, 24.00, 0.36),
+    ("9787040604214", "高等数学习题全解指导 上册 同济·第八版", "同济大学数学科学学院", "高等教育出版社", "教材", 46.40, 26.00, 0.36),
+    ("9787040604221", "高等数学习题全解指导 下册 同济·第八版", "同济大学数学科学学院", "高等教育出版社", "教材", 39.20, 22.00, 0.36),
     ("9787040599039", "毛泽东思想和中国特色社会主义理论体系概论（2023年版）", "本书编写组", "高等教育出版社", "教材", 25.00, 12.00, 0.36),
+    ("9787020002207", "红楼梦", "曹雪芹、高鹗", "人民文学出版社", "文学", 59.70, 28.00, 0.30),
 ]
 
 
@@ -61,6 +64,7 @@ SCHEMA_STATEMENTS = [
         damage_score DECIMAL(6, 4) NOT NULL,
         completeness_score DECIMAL(6, 4) NOT NULL,
         evaluated_price DECIMAL(10, 2) NOT NULL,
+        image_path VARCHAR(255),
         recognized_text TEXT,
         created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
         CONSTRAINT fk_recycle_records_book
@@ -69,7 +73,57 @@ SCHEMA_STATEMENTS = [
             ON DELETE RESTRICT
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     """,
+    """
+    CREATE TABLE IF NOT EXISTS buyer_orders (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        recycle_record_id INT NOT NULL,
+        buyer_name VARCHAR(100) NOT NULL,
+        buyer_phone VARCHAR(50) NOT NULL,
+        sale_price DECIMAL(10, 2) NOT NULL,
+        status VARCHAR(30) NOT NULL DEFAULT 'pending',
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        refunded_at TIMESTAMP NULL DEFAULT NULL,
+        INDEX idx_buyer_orders_record_status (recycle_record_id, status),
+        CONSTRAINT fk_buyer_orders_record
+            FOREIGN KEY (recycle_record_id) REFERENCES recycle_records(id)
+            ON UPDATE CASCADE
+            ON DELETE RESTRICT
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    """,
+    """
+    CREATE OR REPLACE VIEW transactions AS
+    SELECT
+        o.id AS transaction_id,
+        o.recycle_record_id,
+        b.title,
+        b.isbn,
+        o.buyer_name,
+        o.buyer_phone,
+        o.sale_price,
+        o.status,
+        o.created_at,
+        o.refunded_at
+    FROM buyer_orders o
+    JOIN recycle_records r ON r.id = o.recycle_record_id
+    JOIN books b ON b.id = r.book_id
+    """,
 ]
+
+
+def ensure_column_exists(cursor, table_name: str, column_name: str, column_definition: str) -> None:
+    cursor.execute(
+        """
+        SELECT COUNT(*)
+        FROM information_schema.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = %s
+          AND COLUMN_NAME = %s
+        """,
+        (table_name, column_name),
+    )
+    exists = cursor.fetchone()[0] > 0
+    if not exists:
+        cursor.execute(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {column_definition}")
 
 
 def init_database(config: dict[str, Any]) -> None:
@@ -78,6 +132,8 @@ def init_database(config: dict[str, Any]) -> None:
         cursor = conn.cursor()
         for statement in SCHEMA_STATEMENTS:
             cursor.execute(statement)
+
+        ensure_column_exists(cursor, "recycle_records", "image_path", "VARCHAR(255)")
 
         cursor.executemany(
             """

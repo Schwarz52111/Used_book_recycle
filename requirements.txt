@@ -4,3 +4,4 @@ pytesseract
 mysql-connector-python
 Pillow
 pydantic
+Flask
