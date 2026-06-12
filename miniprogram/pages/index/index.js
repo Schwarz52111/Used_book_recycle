@@ -33,12 +33,22 @@ function decorate(it) {
 }
 
 Page({
-  data: { items: [], recos: [], categories: [], q: "", category: "", loading: true, error: "" },
+  data: { items: [], recos: [], textbooks: [], categories: [], q: "", category: "", loading: true, error: "" },
 
   onShow() {
     this.load();
     this.loadRecos();
+    this.loadTextbooks();
     this.loadCategories();
+  },
+
+  loadTextbooks() {
+    const oid = app.globalData.openid || "";
+    if (!oid) { this.setData({ textbooks: [] }); return; }
+    app
+      .api("GET", "/recommend/textbooks?openid=" + encodeURIComponent(oid))
+      .then((tb) => this.setData({ textbooks: (tb || []).map(decorate) }))
+      .catch(() => {});
   },
 
   load() {
@@ -88,6 +98,9 @@ Page({
   },
   onRecoCoverError(e) {
     this.setData({ ["recos[" + e.currentTarget.dataset.idx + "].coverFailed"]: true });
+  },
+  onTbCoverError(e) {
+    this.setData({ ["textbooks[" + e.currentTarget.dataset.idx + "].coverFailed"]: true });
   },
 
   openDetail(e) {

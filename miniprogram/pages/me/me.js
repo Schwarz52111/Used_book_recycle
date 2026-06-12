@@ -8,7 +8,7 @@ const LEDGER_LABEL = {
 };
 
 Page({
-  data: { user: null, level: null, ledger: [], orders: [], loading: true, error: "" },
+  data: { user: null, level: null, ledger: [], orders: [], major: "", semester: "", savedTip: "", loading: true, error: "" },
 
   onShow() {
     this.refresh();
@@ -31,8 +31,9 @@ Page({
       app.api("GET", "/users/" + openid + "/ledger"),
       app.api("GET", "/users/" + openid + "/orders"),
       app.api("GET", "/users/" + openid + "/level"),
+      app.api("GET", "/users/" + openid + "/profile"),
     ])
-      .then(([user, ledger, orders, level]) => {
+      .then(([user, ledger, orders, level, profile]) => {
         app.globalData.user = user;
         let lv = null;
         if (level) {
@@ -65,10 +66,29 @@ Page({
           level: lv,
           ledger: list,
           orders: ords,
+          major: (profile && profile.major) || "",
+          semester: profile && profile.semester ? String(profile.semester) : "",
           loading: false,
         });
       })
       .catch((e) => this.setData({ error: e.message, loading: false }));
+  },
+
+  onMajorInput(e) { this.setData({ major: e.detail.value }); },
+  onSemesterInput(e) { this.setData({ semester: e.detail.value }); },
+  saveProfile() {
+    const openid = app.globalData.openid;
+    if (!openid) return;
+    app
+      .api("POST", "/users/" + openid + "/profile", {
+        major: this.data.major.trim(),
+        semester: parseInt(this.data.semester) || 0,
+      })
+      .then(() => {
+        this.setData({ savedTip: "已保存，去买书页看本学期教材" });
+        setTimeout(() => this.setData({ savedTip: "" }), 2500);
+      })
+      .catch((e) => this.setData({ savedTip: "保存失败：" + e.message }));
   },
 
   goSell() { wx.switchTab({ url: "/pages/sell/sell" }); },

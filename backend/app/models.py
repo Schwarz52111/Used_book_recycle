@@ -206,6 +206,29 @@ class Order(Base):
     inventory: Mapped[Inventory] = relationship("Inventory", lazy="joined")
 
 
+class CourseTextbook(Base):
+    """课程教材表：专业 + 学期 → 课程及其教材 ISBN。"""
+
+    __tablename__ = "course_textbooks"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    major: Mapped[str] = mapped_column(String(64), index=True)
+    semester: Mapped[int] = mapped_column(Integer, index=True)
+    course_name: Mapped[str] = mapped_column(String(128), default="")
+    isbn: Mapped[str] = mapped_column(String(20), index=True)
+
+
+class UserProfile(Base):
+    """用户学业档案：专业 + 当前学期，用于教材精准推荐。"""
+
+    __tablename__ = "user_profiles"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), unique=True, index=True)
+    major: Mapped[str] = mapped_column(String(64), default="")
+    semester: Mapped[int] = mapped_column(Integer, default=0)
+
+
 class LedgerEntry(Base):
     """账本流水：回收到账 / 购书支出 / 充值 / 退款，记录每笔余额变动。"""
 

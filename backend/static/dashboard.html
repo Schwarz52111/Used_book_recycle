@@ -20,6 +20,7 @@
   .spacer{flex:1;}
   .lnk{font-size:13px;color:var(--forest);text-decoration:none;border:1px solid var(--line);background:#fff;border-radius:8px;padding:7px 14px;}
   .btn{border:none;background:var(--forest);color:#fff;border-radius:8px;padding:8px 16px;font-size:13px;cursor:pointer;margin-left:8px;}
+  .exports{margin:16px 0 4px;font-size:13px;color:var(--ink-soft);display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
   .kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin:20px 0;}
   .kpi{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px;box-shadow:0 4px 16px rgba(45,74,43,.04);}
   .kpi .n{font-family:var(--serif);font-size:30px;font-weight:700;color:var(--forest);}
@@ -51,6 +52,13 @@
     <button class="btn" onclick="recompute()">重算热度</button>
   </header>
 
+  <div class="exports">
+    导出报表：
+    <a class="lnk" href="/report/recycle.csv">回收记录</a>
+    <a class="lnk" href="/report/orders.csv">成交订单</a>
+    <a class="lnk" href="/report/inventory.csv">在库库存</a>
+  </div>
+
   <div class="kpis" id="kpis"></div>
 
   <div class="panel" id="capPanel" style="margin-bottom:18px;display:none;">
@@ -71,6 +79,11 @@
       <div id="recent"></div>
     </div>
   </div>
+
+  <div class="panel" style="margin-top:18px;">
+    <h2>滞销处理建议</h2>
+    <div id="slow"></div>
+  </div>
 </div>
 
 <script>
@@ -88,6 +101,7 @@ async function load() {
     renderCapacity(d.capacity);
     renderHeat(d.top_heat);
     renderRecent(d.recent);
+    loadSlow();
   } catch (e) {
     document.getElementById("kpis").innerHTML = '<div class="empty">加载失败：' + e.message + '</div>';
   }
@@ -132,6 +146,32 @@ function renderRecent(rows) {
       <div><div>${r.title || "二手书"}</div><div class="t">${(r.time||"").replace("T"," ").slice(5,16)} · ${r.order_no}</div></div>
       <div class="amt">${yuan(r.amount)}</div>
     </div>`).join("");
+}
+async function loadSlow() {
+  try {
+    const rows = await api("GET", "/ops/slow-movers");
+    const el = document.getElementById("slow");
+    if (!rows || !rows.length) { el.innerHTML = '<div class="empty">暂无滞销书（在库时间短或有热度）</div>'; return; }
+    el.innerHTML = rows.map(r => `
+      <div class="rrow">
+        <div><div>${r.title || "—"}</div><div class="t">在库 ${r.days_in_stock} 天 · 热度 ${(r.heat*100).toFixed(0)} · ${r.suggestion}</div></div>
+        <div>
+          <button class="btn" style="background:#b06a3b" onclick="doMarkdown(${r.inventory_id}, ${r.suggested_price===null?'null':r.suggested_price})">降价</button>
+          <button class="btn" style="background:#7d8471" onclick="doDonate(${r.inventory_id})">捐赠</button>
+        </div>
+      </div>`).join("");
+  } catch (e) {
+    document.getElementById("slow").innerHTML = '<div class="empty">加载失败：' + e.message + '</div>';
+  }
+}
+async function doMarkdown(id, price) {
+  try { await fetch("/ops/markdown", {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({inventory_id:id,new_price:price})}); load(); }
+  catch (e) { alert("降价失败：" + e.message); }
+}
+async function doDonate(id) {
+  if (!confirm("确认将此书标记为捐赠并下架？")) return;
+  try { await fetch("/ops/donate", {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({inventory_id:id})}); load(); }
+  catch (e) { alert("捐赠失败：" + e.message); }
 }
 async function recompute() {
   try { await api("POST", "/analytics/heat/recompute"); load(); }

@@ -9,7 +9,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from sqlalchemy import select
 
@@ -67,6 +67,20 @@ def main() -> None:
         # 每本各上架一本在库（供浏览/推荐候选）
         for b in books.values():
             stock(b)
+
+        # 演示滞销：两本陈旧、低热度在库，便于看板「滞销处理建议」展示
+        for isbn, days in (("9787544291200", 40), ("9787532776801", 20)):
+            b = books[isbn]
+            db.add(
+                Inventory(
+                    book_id=b.id, condition_level="acceptable",
+                    cost_price=round(float(b.market_price) * 0.3, 2),
+                    sale_price=round(float(b.market_price) * 0.6, 2),
+                    machine_id="KIOSK-01", slot_code="", status=InventoryStatus.in_stock,
+                    created_at=datetime.now() - timedelta(days=days),
+                )
+            )
+        db.commit()
 
         # demo_user 买过 2 本「计算机」（各单独一本，已售），驱动偏好与成交额
         for i, isbn in enumerate(("9787111407010", "9787115546081")):

@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 from app.accounts.service import get_or_create_user
 from app.models import (
     Book,
+    CourseTextbook,
     Inventory,
     InventoryStatus,
     LedgerEntry,
@@ -21,6 +22,8 @@ from app.models import (
     Order,
     OrderStatus,
     RecycleRecord,
+    User,
+    UserProfile,
 )
 
 CAT_W_BUY = 2
@@ -54,6 +57,72 @@ def _affinity(db: Session, user_id: int) -> dict[str, int]:
         if cat:
             aff[cat] = aff.get(cat, 0) + CAT_W_SELL
     return aff
+
+
+def get_profile(db: Session, openid: str) -> dict:
+    user = db.scalar(select(User).where(User.openid == openid))
+    if not user:
+        return {"major": "", "semester": 0}
+    p = db.scalar(select(UserProfile).where(UserProfile.user_id == user.id))
+    return {"major": p.major if p else "", "semester": p.semester if p else 0}
+
+
+def set_profile(db: Session, openid: str, major: str, semester: int) -> dict:
+    user = get_or_create_user(db, openid)
+    p = db.scalar(select(UserProfile).where(UserProfile.user_id == user.id))
+    if not p:
+        p = UserProfile(user_id=user.id)
+        db.add(p)
+    p.major = (major or "").strip()
+    p.semester = int(semester or 0)
+    db.commit()
+    return {"major": p.major, "semester": p.semester}
+
+
+def textbook_recommend(db: Session, openid: str, limit: int = 8) -> list[dict]:
+    """按用户专业+学期，推在库的本学期教材。"""
+    prof = get_profile(db, openid)
+    if not prof["major"] or not prof["semester"]:
+        return []
+    courses = list(
+        db.scalars(
+            select(CourseTextbook).where(
+                CourseTextbook.major == prof["major"],
+                CourseTextbook.semester == prof["semester"],
+            )
+        ).all()
+    )
+    out: list[dict] = []
+    seen: set[int] = set()
+    for ct in courses:
+        item = db.scalar(
+            select(Inventory)
+            .join(Book, Inventory.book_id == Book.id)
+            .where(Book.isbn == ct.isbn, Inventory.status == InventoryStatus.in_stock)
+        )
+        if not item or item.book_id in seen:
+            continue
+        seen.add(item.book_id)
+        book = item.book
+        out.append(
+            {
+                "id": item.id,
+                "book_id": book.id,
+                "title": book.title,
+                "isbn": book.isbn,
+                "condition_level": item.condition_level,
+                "sale_price": float(item.sale_price or 0),
+                "cover_url": book.cover_url or "",
+                "machine_id": item.machine_id,
+                "slot_code": item.slot_code,
+                "status": item.status.value,
+                "reason": f"本学期教材 · {ct.course_name}",
+                "course": ct.course_name,
+            }
+        )
+        if len(out) >= limit:
+            break
+    return out
 
 
 def recommend(db: Session, openid: str = "", limit: int = 6) -> list[dict]:

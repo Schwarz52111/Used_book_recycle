@@ -19,6 +19,24 @@
           data-cat="{{item}}" bindtap="selectCategory">{{item}}</view>
   </scroll-view>
 
+  <!-- 本学期教材（设了专业/学期且有在库教材时显示） -->
+  <block wx:if="{{textbooks.length && !q && !category}}">
+    <view class="sec-title">本学期教材</view>
+    <scroll-view scroll-x class="reco-scroll" show-scrollbar="{{false}}">
+      <view wx:for="{{textbooks}}" wx:key="id" class="reco" bindtap="openDetail" data-item="{{item}}">
+        <view class="reco-cover">
+          <image wx:if="{{item.coverUrl && !item.coverFailed}}" class="reco-img" src="{{item.coverUrl}}"
+                 mode="aspectFill" binderror="onTbCoverError" data-idx="{{index}}" />
+          <view wx:else class="reco-gen" style="background: linear-gradient(150deg, {{item.c1}}, {{item.c2}})">
+            <text class="rg-title">{{item.title}}</text>
+          </view>
+        </view>
+        <view class="reco-reason">{{item.course}}</view>
+        <view class="reco-price">{{item.priceText}}</view>
+      </view>
+    </scroll-view>
+  </block>
+
   <!-- 为你推荐（仅未筛选时显示） -->
   <block wx:if="{{recos.length && !q && !category}}">
     <view class="sec-title">为你推荐</view>

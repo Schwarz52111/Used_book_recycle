@@ -34,6 +34,18 @@
       </view>
     </view>
 
+    <!-- 学业档案（教材精准推荐） -->
+    <view class="card pfcard">
+      <view class="pf-title">学业档案 · 教材推荐</view>
+      <view class="pf-row">
+        <input class="pf-input" placeholder="专业（如 计算机）" value="{{major}}" bindinput="onMajorInput" />
+        <input class="pf-input pf-sem" type="number" placeholder="学期" value="{{semester}}" bindinput="onSemesterInput" />
+        <view class="pf-save" bindtap="saveProfile">保存</view>
+      </view>
+      <view wx:if="{{savedTip}}" class="pf-tip muted small">{{savedTip}}</view>
+      <view wx:else class="pf-tip muted small">填好后，买书页会出现“本学期教材”</view>
+    </view>
+
     <!-- 我的订单 -->
     <view class="sec-title">我的订单</view>
     <view wx:if="{{orders.length === 0}}" class="empty card muted">还没有购书订单，去买书页逛逛</view>
