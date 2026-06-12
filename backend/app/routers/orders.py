@@ -5,7 +5,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from app.accounts.service import get_or_create_user, list_ledger
+from app.accounts.service import credit_tier, get_or_create_user, list_ledger
 from app.db import get_db
 from app.orders import service as orders
 from app.schemas import (
@@ -86,6 +86,18 @@ def get_user_endpoint(openid: str, db: Session = Depends(get_db)):
 def user_orders_endpoint(openid: str, db: Session = Depends(get_db)):
     """用户订单历史（含书目信息）。"""
     return orders.user_orders(db, openid)
+
+
+@router.get("/users/{openid}/level")
+def user_level_endpoint(openid: str, db: Session = Depends(get_db)):
+    """用户信用等级与权益。"""
+    from app.pricing.engine import credit_coef
+
+    user = get_or_create_user(db, openid)
+    info = credit_tier(user.credit_score)
+    info["credit_score"] = user.credit_score
+    info["recycle_coef"] = credit_coef(user.credit_score)
+    return info
 
 
 @router.get("/users/{openid}/ledger", response_model=list[LedgerEntryInfo])

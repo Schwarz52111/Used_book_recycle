@@ -59,6 +59,12 @@ def categories_endpoint(machine_id: str | None = None, db: Session = Depends(get
     return service.list_categories(db, machine_id)
 
 
+@router.get("/capacity")
+def capacity_endpoint(machine_id: str = "KIOSK-01", db: Session = Depends(get_db)):
+    """设备库容与满仓预警。"""
+    return service.capacity_status(db, machine_id)
+
+
 @router.post("/dispense")
 def dispense_endpoint(req: DispenseRequest, mechanism: str = "simulated", db: Session = Depends(get_db)):
     """购买后出货。mechanism: vend_channel | rfid_door | simulated。"""

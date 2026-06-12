@@ -8,6 +8,15 @@
   box-shadow: 0 10rpx 30rpx rgba(45, 74, 43, 0.22);
 }
 .bc-top { display: flex; align-items: center; }
+.tier { margin-left: auto; color: #fff; font-size: 24rpx; font-weight: 700; padding: 8rpx 20rpx; border-radius: 999rpx; box-shadow: 0 4rpx 12rpx rgba(0,0,0,.15); }
+
+.lvcard { padding: 28rpx; margin-top: 24rpx; }
+.lv-head { display: flex; align-items: baseline; justify-content: space-between; }
+.lv-name { font-size: 32rpx; font-weight: 800; }
+.lv-coef { font-size: 28rpx; font-weight: 700; color: var(--clay); }
+.lv-prog { margin-top: 8rpx; }
+.perks { display: flex; flex-wrap: wrap; gap: 14rpx; margin-top: 18rpx; }
+.perk { background: var(--mint); color: var(--forest); font-size: 24rpx; padding: 8rpx 18rpx; border-radius: 999rpx; }
 .avatar { width: 88rpx; height: 88rpx; border-radius: 22rpx; background: rgba(255,255,255,0.18); color: #fff; font-size: 42rpx; display: flex; align-items: center; justify-content: center; }
 .uinfo { margin-left: 22rpx; }
 .nick { font-size: 34rpx; font-weight: 700; }

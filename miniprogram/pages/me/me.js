@@ -8,7 +8,7 @@ const LEDGER_LABEL = {
 };
 
 Page({
-  data: { user: null, ledger: [], orders: [], loading: true, error: "" },
+  data: { user: null, level: null, ledger: [], orders: [], loading: true, error: "" },
 
   onShow() {
     this.refresh();
@@ -30,9 +30,18 @@ Page({
       app.api("GET", "/users/" + openid),
       app.api("GET", "/users/" + openid + "/ledger"),
       app.api("GET", "/users/" + openid + "/orders"),
+      app.api("GET", "/users/" + openid + "/level"),
     ])
-      .then(([user, ledger, orders]) => {
+      .then(([user, ledger, orders, level]) => {
         app.globalData.user = user;
+        let lv = null;
+        if (level) {
+          const remain = level.next_at != null ? Math.max(0, level.next_at - level.credit_score) : 0;
+          lv = Object.assign({}, level, {
+            coefText: (level.recycle_coef >= 1 ? "+" : "") + Math.round((level.recycle_coef - 1) * 100) + "%",
+            progText: level.next_tier ? "再 " + remain + " 分升「" + level.next_tier + "」" : "已是最高等级",
+          });
+        }
         const list = (ledger || []).map((e) => {
           const m = LEDGER_LABEL[e.entry_type] || { text: e.entry_type, sign: "", color: "#5f6655" };
           return {
@@ -53,6 +62,7 @@ Page({
         }));
         this.setData({
           user: Object.assign({}, user, { balanceText: "¥" + Number(user.balance || 0).toFixed(2) }),
+          level: lv,
           ledger: list,
           orders: ords,
           loading: false,

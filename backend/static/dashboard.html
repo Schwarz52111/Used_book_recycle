@@ -53,6 +53,14 @@
 
   <div class="kpis" id="kpis"></div>
 
+  <div class="panel" id="capPanel" style="margin-bottom:18px;display:none;">
+    <h2>设备库容 · <span id="capMachine">KIOSK-01</span></h2>
+    <div class="hrow">
+      <div class="top"><span id="capText">—</span><span class="s" id="capWarn"></span></div>
+      <div class="bar"><i id="capBar" style="width:0%"></i></div>
+    </div>
+  </div>
+
   <div class="cols">
     <div class="panel">
       <h2>书目热度排行</h2>
@@ -77,6 +85,7 @@ async function load() {
   try {
     const d = await api("GET", "/analytics/dashboard");
     renderKpis(d.kpi);
+    renderCapacity(d.capacity);
     renderHeat(d.top_heat);
     renderRecent(d.recent);
   } catch (e) {
@@ -93,6 +102,19 @@ function renderKpis(k) {
   ];
   document.getElementById("kpis").innerHTML = items.map(i =>
     `<div class="kpi"><div class="n ${i.clay?'clay':''}">${i.n}</div><div class="l">${i.l}</div></div>`).join("");
+}
+function renderCapacity(c) {
+  if (!c) return;
+  const pct = c.capacity ? Math.round((c.used / c.capacity) * 100) : 0;
+  document.getElementById("capPanel").style.display = "block";
+  document.getElementById("capMachine").textContent = c.machine_id;
+  document.getElementById("capText").textContent = `已用 ${c.used} / ${c.capacity}（空闲 ${c.free}）`;
+  const bar = document.getElementById("capBar");
+  bar.style.width = pct + "%";
+  bar.style.background = c.full ? "#9a4b2e" : (c.warn ? "#b06a3b" : "var(--forest)");
+  const w = document.getElementById("capWarn");
+  w.textContent = c.full ? "已满仓" : (c.warn ? "接近满仓" : "充裕");
+  w.style.color = c.full ? "#9a4b2e" : (c.warn ? "#b06a3b" : "var(--sage)");
 }
 function renderHeat(rows) {
   if (!rows || !rows.length) { document.getElementById("heat").innerHTML = '<div class="empty">暂无数据，先产生些交易后点“重算热度”</div>'; return; }

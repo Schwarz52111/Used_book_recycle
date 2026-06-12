@@ -5,7 +5,7 @@ from __future__ import annotations
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from app.accounts.service import adjust_credit, get_or_create_user
+from app.accounts.service import adjust_credit, credit_tier, get_or_create_user
 from app.db import Base
 from app.models import Book
 from app.pricing.engine import credit_coef, evaluate_price
@@ -39,6 +39,17 @@ def test_adjust_credit_clamps():
     assert u.credit_score == 100
     assert adjust_credit(db, u, 100) == 150     # 封顶 150
     assert adjust_credit(db, u, -1000) == 0     # 触底 0
+
+
+def test_credit_tiers():
+    assert credit_tier(50)["tier"] == "青铜"
+    assert credit_tier(50)["next_tier"] == "白银" and credit_tier(50)["next_at"] == 90
+    assert credit_tier(100)["tier"] == "白银"
+    assert credit_tier(110)["tier"] == "黄金"
+    diamond = credit_tier(150)
+    assert diamond["tier"] == "钻石"
+    assert diamond["next_tier"] is None      # 最高等级
+    assert diamond["perks"]                   # 有权益
 
 
 def test_high_credit_pays_more():

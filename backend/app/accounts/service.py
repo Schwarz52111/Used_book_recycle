@@ -67,6 +67,39 @@ def credit_recycle_payout(db: Session, user: User, amount: float, recycle_record
 
 CREDIT_MIN, CREDIT_MAX = 0, 150
 
+# 信用等级：名称, 门槛下限, 颜色
+CREDIT_TIERS = [
+    ("青铜", 0, "#a9744f"),
+    ("白银", 90, "#9aa3ad"),
+    ("黄金", 110, "#c79a3a"),
+    ("钻石", 130, "#3aa0c7"),
+]
+CREDIT_PERKS = {
+    "青铜": ["基础回收价", "正常浏览与购买"],
+    "白银": ["标准回收价", "复核优先处理"],
+    "黄金": ["回收价上浮", "专属黄金标识"],
+    "钻石": ["最高回收率", "新书优先回收额度"],
+}
+
+
+def credit_tier(credit_score: int | None) -> dict:
+    """信用分 → 等级、权益、距下一级。"""
+    score = int(credit_score if credit_score is not None else 100)
+    name, low, color = CREDIT_TIERS[0]
+    nxt = None
+    for i, (n, l, c) in enumerate(CREDIT_TIERS):
+        if score >= l:
+            name, low, color = n, l, c
+            nxt = CREDIT_TIERS[i + 1] if i + 1 < len(CREDIT_TIERS) else None
+    return {
+        "tier": name,
+        "color": color,
+        "tier_min": low,
+        "perks": CREDIT_PERKS.get(name, []),
+        "next_tier": nxt[0] if nxt else None,
+        "next_at": nxt[1] if nxt else None,
+    }
+
 
 def adjust_credit(db: Session, user: User, delta: int) -> int:
     """调整用户信用分，封顶在 [0, 150]。返回新分值。"""

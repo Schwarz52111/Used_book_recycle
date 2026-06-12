@@ -105,6 +105,8 @@ def dashboard(db: Session = Depends(get_db)):
         for no, amt, created, title in recent_rows
     ]
 
+    from app.inventory.service import capacity_status
+
     return {
         "kpi": {
             "in_stock": in_stock,
@@ -113,6 +115,7 @@ def dashboard(db: Session = Depends(get_db)):
             "recycled": recycled,
             "review_pending": review_pending,
         },
+        "capacity": capacity_status(db, "KIOSK-01"),
         "top_heat": top_heat,
         "recent": recent,
     }

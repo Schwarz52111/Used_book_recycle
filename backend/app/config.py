@@ -37,6 +37,10 @@ class Settings(BaseSettings):
     payment_provider: str = "mock"   # mock | wechat
     dispense_mechanism: str = "simulated"  # simulated | vend_channel | rfid_door
 
+    # 仓储
+    machine_capacity: int = 60       # 单台设备货道总数
+    capacity_warn_ratio: float = 0.8  # 占用达此比例预警
+
     # 微信登录与小程序
     auth_provider: str = "mock"      # mock | wechat
     wechat_appid: str = ""

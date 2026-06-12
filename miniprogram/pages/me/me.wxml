@@ -10,6 +10,7 @@
           <view class="nick">{{user.nickname || '校园用户'}}</view>
           <view class="credit">信用分 {{user.credit_score}}</view>
         </view>
+        <view wx:if="{{level}}" class="tier" style="background: {{level.color}}">{{level.tier}}</view>
       </view>
       <view class="bc-bal">
         <view class="bal-lbl">账户余额</view>
@@ -18,6 +19,18 @@
       <view class="bc-actions">
         <view class="bc-btn" bindtap="goSell">卖书赚钱</view>
         <view class="bc-btn" bindtap="goBuy">去买书</view>
+      </view>
+    </view>
+
+    <!-- 信用等级权益 -->
+    <view wx:if="{{level}}" class="card lvcard">
+      <view class="lv-head">
+        <view class="lv-name" style="color: {{level.color}}">{{level.tier}}会员</view>
+        <view class="lv-coef">回收价 {{level.coefText}}</view>
+      </view>
+      <view class="lv-prog muted small">{{level.progText}}</view>
+      <view class="perks">
+        <view wx:for="{{level.perks}}" wx:key="*this" class="perk">✓ {{item}}</view>
       </view>
     </view>
 

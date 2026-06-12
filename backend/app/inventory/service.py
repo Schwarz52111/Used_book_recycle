@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import json
 
-from sqlalchemy import or_, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
+from app.config import get_settings
 from app.inventory.dispense import DispenseResult, get_dispenser
 from app.models import (
     Book,
@@ -23,6 +24,49 @@ MIN_PRICE = 1.0
 
 class InventoryError(RuntimeError):
     pass
+
+
+def capacity_status(db: Session, machine_id: str) -> dict:
+    """设备库容状态：容量/已用/空闲/是否满仓/是否预警。"""
+    s = get_settings()
+    cap = s.machine_capacity
+    used = (
+        db.scalar(
+            select(func.count(Inventory.id)).where(
+                Inventory.machine_id == machine_id,
+                Inventory.status == InventoryStatus.in_stock,
+            )
+        )
+        or 0
+    )
+    return {
+        "machine_id": machine_id,
+        "capacity": cap,
+        "used": used,
+        "free": max(0, cap - used),
+        "full": used >= cap,
+        "warn": used >= cap * s.capacity_warn_ratio,
+    }
+
+
+def allocate_slot(db: Session, machine_id: str) -> str | None:
+    """在设备货道里找第一个空位（A1..A{capacity}）。满则返回 None。"""
+    cap = get_settings().machine_capacity
+    used = {
+        c
+        for (c,) in db.execute(
+            select(Inventory.slot_code).where(
+                Inventory.machine_id == machine_id,
+                Inventory.status == InventoryStatus.in_stock,
+            )
+        ).all()
+        if c
+    }
+    for i in range(1, cap + 1):
+        code = f"A{i}"
+        if code not in used:
+            return code
+    return None
 
 
 def resolve_payout(ai_price: float, seller_price: float | None) -> tuple[float, bool]:
@@ -60,6 +104,12 @@ def intake(
     # 回收价：AI 估价 + 卖家可选改价
     ai_price = float(record.evaluated_price or 0)
     cost_price, needs_review = resolve_payout(ai_price, seller_price)
+
+    # 库位与满仓：满则拒收；未指定货位则自动分配空位
+    if capacity_status(db, machine_id)["full"]:
+        raise InventoryError("设备已满仓，暂无法回收，请联系运营调度")
+    if not slot_code:
+        slot_code = allocate_slot(db, machine_id) or ""
 
     # 上架售价：用定价引擎按书目+品相重新计算（保证有售价可展示/售卖）
     sale_price = 0.0
