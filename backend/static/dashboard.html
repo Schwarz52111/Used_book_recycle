@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>即刻小绿 · 运营数据看板</title>
+<style>
+  :root{
+    --forest:#2d4a2b;--forest-700:#3a5d37;--sage:#7d8471;--olive-soft:#e8ebdf;
+    --ivory:#f3f6f1;--line:#e3e1d6;--ink:#26301f;--ink-soft:#5f6655;--clay:#b06a3b;
+    --serif:Georgia,"Songti SC",serif;--sans:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:var(--sans);color:var(--ink);background:var(--ivory);}
+  .wrap{max-width:1000px;margin:0 auto;padding:24px;}
+  header{display:flex;align-items:center;gap:12px;padding-bottom:18px;border-bottom:1px solid var(--line);}
+  .logo{width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,var(--forest-700),var(--forest));color:#fff;display:grid;place-items:center;font-weight:800;}
+  h1{font-family:var(--serif);font-size:22px;margin:0;color:var(--forest);}
+  .sub{font-size:12px;color:var(--sage);}
+  .spacer{flex:1;}
+  .lnk{font-size:13px;color:var(--forest);text-decoration:none;border:1px solid var(--line);background:#fff;border-radius:8px;padding:7px 14px;}
+  .btn{border:none;background:var(--forest);color:#fff;border-radius:8px;padding:8px 16px;font-size:13px;cursor:pointer;margin-left:8px;}
+  .exports{margin:16px 0 4px;font-size:13px;color:var(--ink-soft);display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+  .kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin:20px 0;}
+  .kpi{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px;box-shadow:0 4px 16px rgba(45,74,43,.04);}
+  .kpi .n{font-family:var(--serif);font-size:30px;font-weight:700;color:var(--forest);}
+  .kpi .n.clay{color:var(--clay);}
+  .kpi .l{font-size:12px;color:var(--ink-soft);margin-top:4px;}
+  .cols{display:grid;grid-template-columns:1.2fr 1fr;gap:18px;}
+  .panel{background:#fff;border:1px solid var(--line);border-radius:14px;padding:20px;box-shadow:0 4px 16px rgba(45,74,43,.04);}
+  .panel h2{font-family:var(--serif);font-size:17px;color:var(--forest);margin:0 0 14px;}
+  .hrow{margin:11px 0;}
+  .hrow .top{display:flex;justify-content:space-between;font-size:13px;color:var(--ink);}
+  .hrow .top .s{color:var(--sage);}
+  .bar{height:9px;background:var(--olive-soft);border-radius:999px;margin-top:5px;overflow:hidden;}
+  .bar>i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--forest),var(--clay));}
+  .rrow{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid var(--line);font-size:14px;}
+  .rrow:last-child{border-bottom:none;}
+  .rrow .t{color:var(--sage);font-size:12px;}
+  .amt{color:var(--clay);font-weight:700;}
+  .empty{color:var(--sage);text-align:center;padding:30px 0;font-size:13px;}
+  @media(max-width:720px){.kpis{grid-template-columns:repeat(2,1fr);}.cols{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo">绿</div>
+    <div><h1>运营数据看板</h1><div class="sub">即刻小绿 · 数据化运营</div></div>
+    <div class="spacer"></div>
+    <a class="lnk" href="/ui/review.html">人工复核台</a>
+    <button class="btn" onclick="recompute()">重算热度</button>
+  </header>
+
+  <div class="exports">
+    导出报表：
+    <a class="lnk" href="/report/recycle.csv">回收记录</a>
+    <a class="lnk" href="/report/orders.csv">成交订单</a>
+    <a class="lnk" href="/report/inventory.csv">在库库存</a>
+  </div>
+
+  <div class="kpis" id="kpis"></div>
+
+  <div class="panel" id="capPanel" style="margin-bottom:18px;display:none;">
+    <h2>设备库容 · <span id="capMachine">KIOSK-01</span></h2>
+    <div class="hrow">
+      <div class="top"><span id="capText">—</span><span class="s" id="capWarn"></span></div>
+      <div class="bar"><i id="capBar" style="width:0%"></i></div>
+    </div>
+  </div>
+
+  <div class="cols">
+    <div class="panel">
+      <h2>书目热度排行</h2>
+      <div id="heat"></div>
+    </div>
+    <div class="panel">
+      <h2>近期成交</h2>
+      <div id="recent"></div>
+    </div>
+  </div>
+
+  <div class="panel" style="margin-top:18px;">
+    <h2>滞销处理建议</h2>
+    <div id="slow"></div>
+  </div>
+</div>
+
+<script>
+const yuan = (n) => "¥" + Number(n || 0).toFixed(2);
+async function api(method, path) {
+  const r = await fetch(path, { method });
+  if (!r.ok) throw new Error("HTTP " + r.status);
+  return r.json();
+}
+
+async function load() {
+  try {
+    const d = await api("GET", "/analytics/dashboard");
+    renderKpis(d.kpi);
+    renderCapacity(d.capacity);
+    renderHeat(d.top_heat);
+    renderRecent(d.recent);
+    loadSlow();
+  } catch (e) {
+    document.getElementById("kpis").innerHTML = '<div class="empty">加载失败：' + e.message + '</div>';
+  }
+}
+function renderKpis(k) {
+  const items = [
+    { n: k.in_stock, l: "在库书目", clay: false },
+    { n: k.sold, l: "累计成交", clay: false },
+    { n: yuan(k.revenue), l: "成交额", clay: true },
+    { n: k.recycled, l: "回收记录", clay: false },
+    { n: k.review_pending, l: "待复核", clay: true },
+  ];
+  document.getElementById("kpis").innerHTML = items.map(i =>
+    `<div class="kpi"><div class="n ${i.clay?'clay':''}">${i.n}</div><div class="l">${i.l}</div></div>`).join("");
+}
+function renderCapacity(c) {
+  if (!c) return;
+  const pct = c.capacity ? Math.round((c.used / c.capacity) * 100) : 0;
+  document.getElementById("capPanel").style.display = "block";
+  document.getElementById("capMachine").textContent = c.machine_id;
+  document.getElementById("capText").textContent = `已用 ${c.used} / ${c.capacity}（空闲 ${c.free}）`;
+  const bar = document.getElementById("capBar");
+  bar.style.width = pct + "%";
+  bar.style.background = c.full ? "#9a4b2e" : (c.warn ? "#b06a3b" : "var(--forest)");
+  const w = document.getElementById("capWarn");
+  w.textContent = c.full ? "已满仓" : (c.warn ? "接近满仓" : "充裕");
+  w.style.color = c.full ? "#9a4b2e" : (c.warn ? "#b06a3b" : "var(--sage)");
+}
+function renderHeat(rows) {
+  if (!rows || !rows.length) { document.getElementById("heat").innerHTML = '<div class="empty">暂无数据，先产生些交易后点“重算热度”</div>'; return; }
+  const max = Math.max(...rows.map(r => r.heat), 0.0001);
+  document.getElementById("heat").innerHTML = rows.map(r => `
+    <div class="hrow">
+      <div class="top"><span>${r.title || "—"}</span><span class="s">热度 ${(r.heat*100).toFixed(0)} · 售 ${r.sales}</span></div>
+      <div class="bar"><i style="width:${Math.max(4,(r.heat/max)*100)}%"></i></div>
+    </div>`).join("");
+}
+function renderRecent(rows) {
+  if (!rows || !rows.length) { document.getElementById("recent").innerHTML = '<div class="empty">还没有成交记录</div>'; return; }
+  document.getElementById("recent").innerHTML = rows.map(r => `
+    <div class="rrow">
+      <div><div>${r.title || "二手书"}</div><div class="t">${(r.time||"").replace("T"," ").slice(5,16)} · ${r.order_no}</div></div>
+      <div class="amt">${yuan(r.amount)}</div>
+    </div>`).join("");
+}
+async function loadSlow() {
+  try {
+    const rows = await api("GET", "/ops/slow-movers");
+    const el = document.getElementById("slow");
+    if (!rows || !rows.length) { el.innerHTML = '<div class="empty">暂无滞销书（在库时间短或有热度）</div>'; return; }
+    el.innerHTML = rows.map(r => `
+      <div class="rrow">
+        <div><div>${r.title || "—"}</div><div class="t">在库 ${r.days_in_stock} 天 · 热度 ${(r.heat*100).toFixed(0)} · ${r.suggestion}</div></div>
+        <div>
+          <button class="btn" style="background:#b06a3b" onclick="doMarkdown(${r.inventory_id}, ${r.suggested_price===null?'null':r.suggested_price})">降价</button>
+          <button class="btn" style="background:#7d8471" onclick="doDonate(${r.inventory_id})">捐赠</button>
+        </div>
+      </div>`).join("");
+  } catch (e) {
+    document.getElementById("slow").innerHTML = '<div class="empty">加载失败：' + e.message + '</div>';
+  }
+}
+async function doMarkdown(id, price) {
+  try { await fetch("/ops/markdown", {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({inventory_id:id,new_price:price})}); load(); }
+  catch (e) { alert("降价失败：" + e.message); }
+}
+async function doDonate(id) {
+  if (!confirm("确认将此书标记为捐赠并下架？")) return;
+  try { await fetch("/ops/donate", {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({inventory_id:id})}); load(); }
+  catch (e) { alert("捐赠失败：" + e.message); }
+}
+async function recompute() {
+  try { await api("POST", "/analytics/heat/recompute"); load(); }
+  catch (e) { alert("重算失败：" + e.message); }
+}
+load();
+</script>
+</body>
+</html>

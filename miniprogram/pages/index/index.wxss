@@ -1,0 +1,44 @@
+.wrap { padding: 28rpx 24rpx 40rpx; }
+.hero { padding: 10rpx 6rpx 26rpx; }
+.hero-title { font-size: 48rpx; font-weight: 800; color: var(--forest); letter-spacing: 1rpx; }
+.hero-sub { font-size: 26rpx; margin-top: 8rpx; }
+
+/* 搜索 */
+.search { display: flex; align-items: center; background: #fff; border-radius: 999rpx; padding: 16rpx 26rpx; box-shadow: 0 6rpx 20rpx rgba(47,93,58,.05); margin-bottom: 18rpx; }
+.s-ico { font-size: 28rpx; opacity: .55; }
+.s-input { flex: 1; margin-left: 14rpx; font-size: 28rpx; color: var(--ink); }
+.s-clear { color: var(--sage); font-size: 30rpx; padding: 0 8rpx; }
+
+/* 分类标签 */
+.chips { white-space: nowrap; margin-bottom: 22rpx; }
+.chip { display: inline-block; padding: 12rpx 30rpx; margin-right: 14rpx; border-radius: 999rpx; background: #fff; color: var(--ink-soft); font-size: 26rpx; box-shadow: 0 4rpx 14rpx rgba(47,93,58,.04); }
+.chip.on { background: var(--forest); color: #fff; }
+
+.grid { display: flex; flex-wrap: wrap; justify-content: space-between; }
+.pcard { width: 48.5%; margin-bottom: 26rpx; padding: 14rpx 14rpx 20rpx; box-sizing: border-box; }
+
+.cover-wrap { position: relative; width: 100%; height: 360rpx; border-radius: 20rpx; overflow: hidden; background: var(--mint); }
+.cover-img { width: 100%; height: 100%; }
+.cover-gen { width: 100%; height: 100%; padding: 26rpx 22rpx; box-sizing: border-box; display: flex; flex-direction: column; }
+.cg-title { color: #fff; font-size: 32rpx; font-weight: 700; line-height: 1.35; font-family: Georgia, "Songti SC", serif; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; overflow: hidden; }
+.cg-rule { width: 44rpx; height: 3rpx; background: rgba(255,255,255,0.5); margin-top: auto; }
+.cg-foot { color: rgba(255,255,255,0.65); font-size: 19rpx; letter-spacing: 3rpx; margin-top: 12rpx; }
+.cover-badge { position: absolute; left: 16rpx; top: 16rpx; color: #fff; font-size: 20rpx; font-weight: 600; padding: 5rpx 14rpx; border-radius: 999rpx; box-shadow: 0 4rpx 12rpx rgba(0,0,0,.12); }
+
+.p-title { font-size: 28rpx; font-weight: 600; color: var(--ink); margin: 18rpx 6rpx 0; line-height: 1.35; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; min-height: 76rpx; }
+.p-row { display: flex; justify-content: space-between; align-items: center; margin: 10rpx 6rpx 0; }
+.price { font-size: 34rpx; }
+.p-buy { background: var(--mint); color: var(--forest); font-size: 24rpx; font-weight: 600; padding: 8rpx 22rpx; border-radius: 999rpx; }
+
+.empty { text-align: center; padding: 110rpx 0; font-size: 28rpx; }
+
+/* 为你推荐 */
+.sec-title { font-size: 32rpx; font-weight: 700; color: var(--forest); margin: 12rpx 6rpx 18rpx; }
+.reco-scroll { white-space: nowrap; margin-bottom: 10rpx; }
+.reco { display: inline-block; width: 220rpx; margin-right: 20rpx; vertical-align: top; }
+.reco-cover { width: 220rpx; height: 300rpx; border-radius: 18rpx; overflow: hidden; background: var(--mint); box-shadow: 0 8rpx 22rpx rgba(47,93,58,.10); }
+.reco-img { width: 100%; height: 100%; }
+.reco-gen { width: 100%; height: 100%; padding: 22rpx 18rpx; box-sizing: border-box; display: flex; }
+.rg-title { color: #fff; font-size: 28rpx; font-weight: 700; line-height: 1.3; font-family: Georgia, "Songti SC", serif; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 5; overflow: hidden; }
+.reco-reason { font-size: 22rpx; color: var(--clay); margin: 14rpx 4rpx 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.reco-price { font-size: 30rpx; font-weight: 800; color: var(--clay); margin: 4rpx 4rpx 0; }

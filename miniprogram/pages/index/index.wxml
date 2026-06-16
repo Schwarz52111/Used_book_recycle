@@ -1,0 +1,82 @@
+<view class="wrap">
+  <view class="hero">
+    <view class="hero-title">校园二手书</view>
+    <view class="hero-sub muted">挑好下单 · 扫码即取 · 绿色循环</view>
+  </view>
+
+  <!-- 搜索 -->
+  <view class="search">
+    <text class="s-ico">🔍</text>
+    <input class="s-input" placeholder="搜书名 / 作者 / ISBN" value="{{q}}"
+           confirm-type="search" bindinput="onSearchInput" bindconfirm="doSearch" />
+    <text wx:if="{{q}}" class="s-clear" bindtap="clearSearch">✕</text>
+  </view>
+
+  <!-- 分类标签 -->
+  <scroll-view wx:if="{{categories.length}}" scroll-x class="chips" show-scrollbar="{{false}}">
+    <view class="chip {{category === '' ? 'on' : ''}}" data-cat="" bindtap="selectCategory">全部</view>
+    <view wx:for="{{categories}}" wx:key="*this" class="chip {{category === item ? 'on' : ''}}"
+          data-cat="{{item}}" bindtap="selectCategory">{{item}}</view>
+  </scroll-view>
+
+  <!-- 本学期教材（设了专业/学期且有在库教材时显示） -->
+  <block wx:if="{{textbooks.length && !q && !category}}">
+    <view class="sec-title">本学期教材</view>
+    <scroll-view scroll-x class="reco-scroll" show-scrollbar="{{false}}">
+      <view wx:for="{{textbooks}}" wx:key="id" class="reco" bindtap="openDetail" data-item="{{item}}">
+        <view class="reco-cover">
+          <image wx:if="{{item.coverUrl && !item.coverFailed}}" class="reco-img" src="{{item.coverUrl}}"
+                 mode="aspectFill" binderror="onTbCoverError" data-idx="{{index}}" />
+          <view wx:else class="reco-gen" style="background: linear-gradient(150deg, {{item.c1}}, {{item.c2}})">
+            <text class="rg-title">{{item.title}}</text>
+          </view>
+        </view>
+        <view class="reco-reason">{{item.course}}</view>
+        <view class="reco-price">{{item.priceText}}</view>
+      </view>
+    </scroll-view>
+  </block>
+
+  <!-- 为你推荐（仅未筛选时显示） -->
+  <block wx:if="{{recos.length && !q && !category}}">
+    <view class="sec-title">为你推荐</view>
+    <scroll-view scroll-x class="reco-scroll" show-scrollbar="{{false}}">
+      <view wx:for="{{recos}}" wx:key="id" class="reco" bindtap="openDetail" data-item="{{item}}">
+        <view class="reco-cover">
+          <image wx:if="{{item.coverUrl && !item.coverFailed}}" class="reco-img" src="{{item.coverUrl}}"
+                 mode="aspectFill" binderror="onRecoCoverError" data-idx="{{index}}" />
+          <view wx:else class="reco-gen" style="background: linear-gradient(150deg, {{item.c1}}, {{item.c2}})">
+            <text class="rg-title">{{item.title}}</text>
+          </view>
+        </view>
+        <view class="reco-reason">{{item.reason}}</view>
+        <view class="reco-price">{{item.priceText}}</view>
+      </view>
+    </scroll-view>
+    <view class="sec-title">全部在库</view>
+  </block>
+
+  <view wx:if="{{loading}}" class="spinner"></view>
+  <view wx:elif="{{error}}" class="empty">加载失败：{{error}}</view>
+  <view wx:elif="{{items.length === 0}}" class="empty muted">{{ (q || category) ? '没有匹配的书，换个关键词或分类试试' : '暂无在库书籍，先去设备投几本吧' }}</view>
+
+  <view wx:else class="grid">
+    <view wx:for="{{items}}" wx:key="id" class="pcard card" bindtap="openDetail" data-item="{{item}}">
+      <view class="cover-wrap">
+        <image wx:if="{{item.coverUrl && !item.coverFailed}}" class="cover-img" src="{{item.coverUrl}}"
+               mode="aspectFill" binderror="onCoverError" data-idx="{{index}}" />
+        <view wx:else class="cover-gen" style="background: linear-gradient(150deg, {{item.c1}}, {{item.c2}})">
+          <text class="cg-title">{{item.title || '二手书'}}</text>
+          <view class="cg-rule"></view>
+          <text class="cg-foot">即刻小绿</text>
+        </view>
+        <text class="cover-badge" style="background: {{item.condColor}}">{{item.condLabel}}</text>
+      </view>
+      <view class="p-title">{{item.title || '二手书'}}</view>
+      <view class="p-row">
+        <text class="price">{{item.priceText}}</text>
+        <view class="p-buy">购买</view>
+      </view>
+    </view>
+  </view>
+</view>

@@ -1,0 +1,46 @@
+/* 即刻小绿 · 清爽园艺风（参考 PlantCare） */
+page {
+  --forest: #2f5d3a;
+  --forest-700: #3a6b46;
+  --sage: #8a9a86;
+  --sage-ink: #5b6b58;
+  --mint: #e8f1e6;       /* 浅绿卡片底 */
+  --mint-soft: #f0f6ee;
+  --bg: #eef4ec;         /* 页面浅绿底 */
+  --paper: #ffffff;
+  --line: #e9efe6;
+  --ink: #25372a;
+  --ink-soft: #6a7668;
+  --clay: #c07d4a;       /* 暖橙重音（价格/到账） */
+  background: var(--bg);
+  color: var(--ink);
+  font-family: -apple-system, "PingFang SC", sans-serif;
+}
+.badge {
+  display: inline-block; color: #fff; border-radius: 999rpx;
+  font-size: 22rpx; padding: 5rpx 16rpx; font-weight: 600;
+}
+.price { color: var(--clay); font-weight: 800; }
+.muted { color: var(--sage-ink); }
+.small { font-size: 24rpx; }
+
+/* 卡片：纯白、大圆角、柔和阴影、无边框 */
+.card {
+  background: var(--paper);
+  border-radius: 28rpx;
+  box-shadow: 0 10rpx 30rpx rgba(47, 93, 58, 0.07);
+}
+
+.btn {
+  background: var(--forest); color: #fff; border-radius: 18rpx;
+  text-align: center; padding: 28rpx 0; font-size: 32rpx; font-weight: 600; line-height: 1.2;
+}
+.btn::after { border: none; }
+.btn-ghost { background: var(--mint); color: var(--forest); }
+
+.spinner {
+  width: 64rpx; height: 64rpx; margin: 80rpx auto;
+  border: 6rpx solid var(--mint); border-top-color: var(--forest);
+  border-radius: 50%; animation: spin 1s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }

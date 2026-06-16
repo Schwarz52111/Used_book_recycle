@@ -1,0 +1,39 @@
+<view class="wrap" wx:if="{{item}}">
+  <view wx:if="{{!done}}">
+    <view class="card detail">
+      <view class="cover-box">
+        <image wx:if="{{coverUrl && !coverFailed}}" class="cover-img" src="{{coverUrl}}" mode="aspectFit" binderror="onCoverError" />
+        <view wx:else class="cover" style="background: linear-gradient(150deg, {{c1}}, {{c2}})">
+          <text class="cv-kicker">二手书</text>
+          <text class="cv-title">{{item.title || '二手书'}}</text>
+          <view class="cv-rule"></view>
+          <text class="cv-foot">即刻小绿 · 校园循环</text>
+        </view>
+      </view>
+      <view class="d-title">{{item.title || '二手书'}}</view>
+      <view class="isbn muted">ISBN {{item.isbn || '—'}}</view>
+      <view class="line">
+        <text class="badge" style="background: {{condColor}}">{{condLabel}}</text>
+        <text class="price big">{{priceText}}</text>
+      </view>
+      <view class="meta muted">设备 {{item.machine_id}} · 货道 {{item.slot_code || '—'}}</view>
+    </view>
+
+    <view wx:if="{{error}}" class="err">{{error}}</view>
+
+    <button class="btn buybtn" loading="{{paying}}" bindtap="buy">
+      {{paying ? '处理中…' : '微信支付 ' + priceText}}
+    </button>
+    <view class="tip muted">开发期为模拟支付，拿到商户号后接入真实微信支付</view>
+  </view>
+
+  <view wx:else class="done">
+    <view class="ok">✓</view>
+    <view class="done-title">购买成功</view>
+    <view class="muted">请到取书口领取你的书</view>
+    <view class="muted small">订单号 {{orderNo}}</view>
+    <button class="btn btn-ghost" bindtap="backToList">返回书目</button>
+  </view>
+</view>
+
+<view wx:else class="empty muted">未选择书籍，请返回书目重新选择</view>

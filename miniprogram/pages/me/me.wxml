@@ -1,0 +1,85 @@
+<view class="wrap">
+  <view wx:if="{{loading}}" class="spinner"></view>
+
+  <block wx:elif="{{user}}">
+    <!-- 余额卡 -->
+    <view class="balance-card">
+      <view class="bc-top">
+        <view class="avatar">绿</view>
+        <view class="uinfo">
+          <view class="nick">{{user.nickname || '校园用户'}}</view>
+          <view class="credit">信用分 {{user.credit_score}}</view>
+        </view>
+        <view wx:if="{{level}}" class="tier" style="background: {{level.color}}">{{level.tier}}</view>
+      </view>
+      <view class="bc-bal">
+        <view class="bal-lbl">账户余额</view>
+        <view class="bal-num">{{user.balanceText}}</view>
+      </view>
+      <view class="bc-actions">
+        <view class="bc-btn" bindtap="goSell">卖书赚钱</view>
+        <view class="bc-btn" bindtap="goBuy">去买书</view>
+      </view>
+    </view>
+
+    <!-- 信用等级权益 -->
+    <view wx:if="{{level}}" class="card lvcard">
+      <view class="lv-head">
+        <view class="lv-name" style="color: {{level.color}}">{{level.tier}}会员</view>
+        <view class="lv-coef">回收价 {{level.coefText}}</view>
+      </view>
+      <view class="lv-prog muted small">{{level.progText}}</view>
+      <view class="perks">
+        <view wx:for="{{level.perks}}" wx:key="*this" class="perk">✓ {{item}}</view>
+      </view>
+    </view>
+
+    <!-- 学业档案（教材精准推荐） -->
+    <view class="card pfcard">
+      <view class="pf-title">学业档案 · 教材推荐</view>
+      <view class="pf-row">
+        <input class="pf-input" placeholder="专业（如 计算机）" value="{{major}}" bindinput="onMajorInput" />
+        <input class="pf-input pf-sem" type="number" placeholder="学期" value="{{semester}}" bindinput="onSemesterInput" />
+        <view class="pf-save" bindtap="saveProfile">保存</view>
+      </view>
+      <view wx:if="{{savedTip}}" class="pf-tip muted small">{{savedTip}}</view>
+      <view wx:else class="pf-tip muted small">填好后，买书页会出现“本学期教材”</view>
+    </view>
+
+    <!-- 我的订单 -->
+    <view class="sec-title">我的订单</view>
+    <view wx:if="{{orders.length === 0}}" class="empty card muted">还没有购书订单，去买书页逛逛</view>
+    <view wx:else class="card list">
+      <view wx:for="{{orders}}" wx:key="order_no" class="row">
+        <view class="row-l">
+          <view class="row-text">{{item.title}}</view>
+          <view class="row-bal muted small">{{item.time}} · {{item.order_no}}</view>
+        </view>
+        <view class="ord-right">
+          <view class="ord-amt">{{item.amountText}}</view>
+          <view class="ord-status {{item.done ? 'ok' : ''}}">{{item.statusLabel}}</view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 账单 -->
+    <view class="sec-title">账单流水</view>
+    <view wx:if="{{ledger.length === 0}}" class="empty card muted">还没有流水，去卖几本书试试</view>
+    <view wx:else class="card list">
+      <view wx:for="{{ledger}}" wx:key="id" class="row">
+        <view class="row-l">
+          <view class="row-text">{{item.text}}</view>
+          <view class="row-bal muted small">{{item.balanceText}}</view>
+        </view>
+        <view class="row-amt" style="color: {{item.color}}">{{item.amountText}}</view>
+      </view>
+    </view>
+
+    <view class="oid muted small">openid：{{user.openid}}</view>
+  </block>
+
+  <view wx:else class="empty-login">
+    <view class="muted">{{error || '未登录'}}</view>
+    <button class="btn" bindtap="refresh">点击登录</button>
+  </view>
+</view>

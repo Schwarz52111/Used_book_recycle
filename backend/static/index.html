@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>即刻小绿 · 二手图书自助回收售卖</title>
+<style>
+  /* ===== Forest Canopy 主题 ===== */
+  :root {
+    --forest: #2d4a2b;     /* 主深绿 */
+    --forest-700: #3a5d37;
+    --sage:   #7d8471;     /* 鼠尾草灰绿 */
+    --olive:  #a4ac86;     /* 橄榄浅绿 */
+    --olive-soft: #e8ebdf;
+    --ivory:  #faf9f6;     /* 象牙白背景 */
+    --paper:  #ffffff;
+    --line:   #e3e1d6;     /* 描边 */
+    --ink:    #26301f;     /* 正文 */
+    --ink-soft:#5f6655;
+    --clay:   #b06a3b;     /* 暖陶土点缀（价格/强调，少量使用） */
+    --clay-soft:#f3e9e0;
+    --serif:  Georgia, "Times New Roman", "Songti SC", "STSong", "SimSun", serif;
+    --sans:   -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    font-family: var(--sans);
+    color: var(--ink);
+    background-color: var(--ivory);
+    background-image:
+      radial-gradient(circle at 1px 1px, rgba(45,74,43,.04) 1px, transparent 0);
+    background-size: 22px 22px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .app { max-width: 1040px; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; }
+
+  /* 报头 */
+  header {
+    display: flex; align-items: center; gap: 14px;
+    padding: 26px 30px 18px;
+    border-bottom: 1px solid var(--line);
+  }
+  .mark { width: 40px; height: 40px; color: var(--forest); flex: none; }
+  .brand b { font-family: var(--serif); font-size: 25px; letter-spacing: 1px; font-weight: 700; color: var(--forest); }
+  .brand span { display: block; font-size: 12px; color: var(--sage); letter-spacing: 3px; margin-top: 2px; }
+  header .spacer { flex: 1; }
+  .home-btn {
+    border: 1px solid var(--line); background: var(--paper); color: var(--forest);
+    font-family: var(--sans); font-size: 15px; padding: 9px 18px; border-radius: 8px; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 7px;
+  }
+  .home-btn:active { background: var(--olive-soft); }
+
+  main { flex: 1; padding: 0 30px 40px; }
+  .screen { display: none; }
+  .screen.active { display: block; animation: rise .4s cubic-bezier(.2,.7,.3,1); }
+  @keyframes rise { from { opacity: 0; transform: translateY(12px);} to {opacity:1; transform:none;} }
+
+  /* 首页 */
+  .hero { text-align: center; padding: 54px 0 40px; }
+  .hero .kicker { font-size: 13px; letter-spacing: 4px; color: var(--clay); text-transform: uppercase; }
+  .hero h1 { font-family: var(--serif); font-weight: 700; font-size: 40px; margin: 14px 0 12px; color: var(--forest); letter-spacing: 1px; }
+  .hero .rule { width: 54px; height: 2px; background: var(--olive); margin: 0 auto 14px; }
+  .hero p { color: var(--ink-soft); font-size: 16px; margin: 0; }
+
+  .choices { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+  .choice {
+    background: var(--paper); border: 1px solid var(--line); border-radius: 14px;
+    padding: 40px 30px; cursor: pointer; transition: .2s; position: relative; overflow: hidden;
+  }
+  .choice:active { transform: translateY(1px); }
+  .choice:hover { border-color: var(--olive); box-shadow: 0 10px 28px rgba(45,74,43,.08); }
+  .choice .ic { width: 46px; height: 46px; color: var(--forest); stroke-width: 1.4; }
+  .choice h2 { font-family: var(--serif); font-size: 26px; margin: 20px 0 8px; color: var(--forest); }
+  .choice p { color: var(--ink-soft); font-size: 14.5px; margin: 0; line-height: 1.6; }
+  .choice .corner { position: absolute; right: -10px; bottom: -16px; color: var(--olive-soft); width: 96px; height: 96px; }
+
+  .foot-note { text-align: center; color: var(--sage); font-size: 12.5px; margin-top: 34px; letter-spacing: .5px; }
+
+  /* 区块标题 */
+  .section-title { font-family: var(--serif); font-size: 22px; margin: 30px 0 18px; color: var(--forest); display:flex; align-items:center; gap:10px; }
+  .section-title .ic { width: 22px; height: 22px; stroke-width: 1.6; color: var(--sage); }
+
+  /* 卡片 / 按钮 */
+  .card { background: var(--paper); border: 1px solid var(--line); border-radius: 14px; padding: 26px; margin-bottom: 18px; }
+  .btn { font-family: var(--sans); border: none; border-radius: 9px; padding: 16px 24px; font-size: 17px; font-weight: 600; cursor: pointer; transition: .15s; width: 100%; display:inline-flex; align-items:center; justify-content:center; gap:8px; }
+  .btn:active { transform: translateY(1px); }
+  .btn-primary { background: var(--forest); color: #fff; }
+  .btn-primary:hover { background: var(--forest-700); }
+  .btn-ghost { background: var(--paper); color: var(--forest); border: 1px solid var(--line); }
+  .btn-ghost:hover { background: var(--olive-soft); }
+  .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .btn .ic { width: 19px; height: 19px; stroke-width: 1.8; }
+
+  /* 上传 */
+  .uploader { border: 1.5px dashed var(--olive); border-radius: 12px; padding: 44px 20px; text-align: center; cursor: pointer; background: var(--ivory); transition:.2s; }
+  .uploader:hover { background: var(--olive-soft); }
+  .uploader .ic { width: 52px; height: 52px; color: var(--sage); stroke-width: 1.3; }
+  .uploader p { margin: 14px 0 4px; font-size: 17px; color: var(--forest); font-weight: 600; }
+  .uploader small { color: var(--sage); }
+  #previewWrap { text-align:center; }
+  #preview { max-width: 100%; max-height: 320px; border-radius: 10px; border: 1px solid var(--line); }
+
+  /* 识别结果 */
+  .book-head { display:flex; gap:16px; align-items:flex-start; padding-bottom: 18px; border-bottom: 1px solid var(--line); }
+  .book-head .ic { width: 40px; height: 40px; color: var(--sage); stroke-width: 1.3; flex:none; }
+  .book-head .meta b { font-family: var(--serif); font-size: 23px; color: var(--forest); }
+  .book-head .meta div { color: var(--ink-soft); margin-top: 5px; font-size: 14px; }
+  .badge { display:inline-flex; align-items:center; padding: 5px 13px; border-radius: 6px; font-size: 14px; font-weight: 600; color:#fff; white-space:nowrap; }
+  .price-box { display:flex; gap: 14px; margin: 20px 0 4px; }
+  .price-main { flex:1.2; background: var(--clay-soft); border-radius: 12px; padding: 20px; }
+  .price-main .num { font-family: var(--serif); font-size: 38px; font-weight: 700; color: var(--clay); }
+  .price-main .lbl { color: var(--clay); font-size: 13px; margin-top:2px; }
+  .price-sub { flex:1; background: var(--olive-soft); border-radius: 12px; padding: 20px; }
+  .price-sub .num { font-family: var(--serif); font-size: 28px; font-weight: 700; color: var(--forest); }
+  .price-sub .lbl { color: var(--forest-700); font-size: 13px; margin-top:2px; }
+  .dims { margin-top: 18px; }
+  .dim { margin: 12px 0; }
+  .dim .top { display:flex; justify-content:space-between; font-size:13.5px; color: var(--ink-soft); }
+  .bar { height: 6px; background: var(--olive-soft); border-radius: 999px; overflow:hidden; margin-top:5px; }
+  .bar > i { display:block; height:100%; border-radius:999px; background: var(--sage); }
+  .bar > i.warn { background: var(--clay); }
+  .reason { font-size: 13px; color: var(--ink-soft); margin-top: 14px; line-height: 1.7; padding: 12px 14px; background: var(--ivory); border-radius: 8px; border-left: 3px solid var(--olive); }
+  .review-banner { background: var(--clay-soft); color: #7a4a23; border-radius: 9px; padding: 13px 16px; margin-bottom: 16px; font-size: 14px; display:flex; gap:8px; align-items:flex-start; }
+  .review-banner .ic { width:18px; height:18px; flex:none; margin-top:1px; }
+
+  /* 买书网格 */
+  .grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(178px, 1fr)); gap: 16px; }
+  .pcard { background: var(--paper); border:1px solid var(--line); border-radius: 12px; padding: 16px; cursor:pointer; transition:.15s; }
+  .pcard:hover { border-color: var(--olive); box-shadow: 0 8px 22px rgba(45,74,43,.07); }
+  .pcard:active { transform: translateY(1px); }
+  .pcard .cover { position:relative; height: 150px; border-radius: 8px; overflow:hidden; background: var(--olive-soft); }
+  .cover .cv-img { width:100%; height:100%; object-fit:cover; display:block; }
+  .cover .cv-fb { width:100%; height:100%; place-items:center; color: var(--sage); }
+  .cover .cv-fb .ic { width: 40px; height:40px; stroke-width:1.2; }
+  .cover-lg { position:relative; width:150px; height:210px; margin:0 auto 6px; border-radius:10px; overflow:hidden; background: var(--olive-soft); box-shadow:0 8px 22px rgba(45,74,43,.12); }
+  .cover-lg .cv-img { width:100%; height:100%; object-fit:cover; }
+  .cover-lg .cv-fb { width:100%; height:100%; place-items:center; color: var(--sage); }
+
+  /* 搜索 + 分类 */
+  .ksearch { display:flex; gap:10px; margin: 6px 0 14px; }
+  .ksearch input { flex:1; border:1px solid var(--line); border-radius:10px; padding:14px 18px; font-size:16px; background:#fff; color:var(--ink); }
+  .kchips { display:flex; flex-wrap:wrap; gap:10px; margin-bottom:18px; }
+  .kchip { background:#fff; border:1px solid var(--line); color:var(--ink-soft); border-radius:999px; padding:8px 18px; font-size:14px; cursor:pointer; }
+  .kchip.on { background: var(--forest); color:#fff; border-color: var(--forest); }
+
+  /* 卖家改价 */
+  .kprice { background: var(--clay-soft); border-radius: 12px; padding: 18px 20px; margin: 18px 0 4px; }
+  .kp-top { display:flex; justify-content:space-between; align-items:baseline; color: var(--clay); font-weight:600; }
+  .kp-ai { font-size:13px; color:#9a7c66; font-weight:400; }
+  .kp-step { display:flex; align-items:center; gap:12px; margin-top:12px; }
+  .kp-step button { width:48px; height:48px; border:1px solid #e0cdbe; background:#fff; color:var(--clay); font-size:26px; border-radius:10px; cursor:pointer; }
+  .kp-unit { font-size:24px; color:var(--clay); font-weight:700; }
+  .kp-step input { flex:1; text-align:center; font-size:30px; font-weight:800; color:var(--clay); border:1px solid #e7d8cb; border-radius:10px; padding:8px; background:#fff; }
+  .kp-sub { font-size:12.5px; color:var(--ink-soft); margin-top:12px; line-height:1.5; }
+  .pcard b { font-family: var(--serif); display:block; margin-top:12px; font-size:16px; line-height:1.35; color: var(--forest); }
+  .pcard .sub { color: var(--sage); font-size:12.5px; margin-top:3px; }
+  .pcard .row { display:flex; justify-content:space-between; align-items:center; margin-top:12px; }
+  .pcard .pp { font-family: var(--serif); font-size:19px; font-weight:700; color: var(--clay); }
+
+  /* 弹层 */
+  .modal { position:fixed; inset:0; background:rgba(38,48,31,.45); display:none; place-items:center; padding:20px; z-index:50; }
+  .modal.active { display:grid; }
+  .modal .box { background:var(--paper); border-radius:16px; padding:30px; max-width:400px; width:100%; text-align:center; animation:rise .3s ease; }
+
+  /* 状态 */
+  .spinner { width:46px; height:46px; border:4px solid var(--olive-soft); border-top-color: var(--forest); border-radius:50%; animation: spin 1s linear infinite; margin: 18px auto; }
+  @keyframes spin { to { transform: rotate(360deg);} }
+  .center { text-align:center; padding: 26px 10px; }
+  .center .ic-lg { width: 60px; height:60px; color: var(--sage); stroke-width:1.3; margin-bottom: 6px; }
+  .center h2 { font-family: var(--serif); color: var(--forest); margin: 8px 0; }
+  .empty { text-align:center; color:var(--sage); padding:54px 0; }
+  .empty .ic-lg { width:54px; height:54px; stroke-width:1.2; margin-bottom:10px; }
+  .err { color: var(--clay); font-size:14px; text-align:center; margin-top:10px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <!-- 叶脉书页 brand mark -->
+    <svg class="mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 21c0-7 0-11 0-18"/>
+      <path d="M12 3C7 3 3.5 6 3.5 11.5 3.5 16 7 19 12 19"/>
+      <path d="M12 3c5 0 8.5 3 8.5 8.5 0 4.5-3.5 7.5-8.5 7.5"/>
+      <path d="M12 8c-2 .5-3.4 1.6-4.2 3M12 8c2 .5 3.4 1.6 4.2 3M12 13c-1.6.4-2.7 1.2-3.4 2.4M12 13c1.6.4 2.7 1.2 3.4 2.4"/>
+    </svg>
+    <div class="brand"><b>即刻小绿</b><span>校园二手图书 自助回收售卖</span></div>
+    <div class="spacer"></div>
+    <button class="home-btn" onclick="go('home')">
+      <svg class="ic" style="width:16px;height:16px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 4l9 6.5"/><path d="M5 9.5V20h14V9.5"/></svg>
+      首页
+    </button>
+  </header>
+
+  <main>
+    <!-- 首页 -->
+    <section id="home" class="screen active">
+      <div class="hero">
+        <div class="kicker">Reduce · Reuse · Recycle</div>
+        <h1>让旧书循环起来</h1>
+        <div class="rule"></div>
+        <p>投书自助估价 · 旧书循环利用 · 绿色低碳校园</p>
+      </div>
+      <div class="choices">
+        <div class="choice sell" onclick="go('sell')">
+          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 5.5V20.5"/><path d="M14 8.5l2.2 2.2L20 7"/></svg>
+          <h2>我要卖书</h2>
+          <p>拍照识别书目与品相，自动估价，立即回收到账。</p>
+          <svg class="corner" viewBox="0 0 24 24" fill="currentColor"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z" opacity=".5"/></svg>
+        </div>
+        <div class="choice buy" onclick="openBuy()">
+          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h2l2.2 11.5a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.2L21 7H6"/><circle cx="9.5" cy="20" r="1.3"/><circle cx="18" cy="20" r="1.3"/></svg>
+          <h2>我要买书</h2>
+          <p>浏览校园在库二手书，挑好下单，扫码即取。</p>
+          <svg class="corner" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="9" opacity=".4"/></svg>
+        </div>
+      </div>
+      <div class="foot-note">设备编号 <span id="machineLabel">KIOSK-01</span> · 如遇问题请联系校园运营点</div>
+    </section>
+
+    <!-- 卖书 -->
+    <section id="sell" class="screen">
+      <div class="section-title">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7.5A1.5 1.5 0 0 1 4.5 6h2L8 4h8l1.5 2h2A1.5 1.5 0 0 1 21 7.5V18a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18z"/><circle cx="12" cy="12.5" r="3.2"/></svg>
+        第一步 · 拍下书籍封面
+      </div>
+      <div class="card" id="sellUpload">
+        <label class="uploader" for="fileInput">
+          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7.5A1.5 1.5 0 0 1 4.5 6h2L8 4h8l1.5 2h2A1.5 1.5 0 0 1 21 7.5V18a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18z"/><circle cx="12" cy="12.5" r="3.4"/></svg>
+          <p>点击拍照 / 选择图片</p>
+          <small>对准封面，有 ISBN 条码识别更准</small>
+        </label>
+        <input id="fileInput" type="file" accept="image/*" capture="environment" hidden onchange="onPick(event)" />
+        <div id="previewWrap" style="display:none; margin-top:18px;">
+          <img id="preview" alt="预览" />
+          <div class="btn-row" style="margin-top:16px;">
+            <button class="btn btn-ghost" onclick="resetSell()">重拍</button>
+            <button class="btn btn-primary" id="appraiseBtn" onclick="appraise()">开始识别估价</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" id="sellLoading" style="display:none;">
+        <div class="center"><div class="spinner"></div><p style="color:var(--ink-soft)">正在识别书目、评估品相、计算回收价…</p></div>
+      </div>
+
+      <div class="card" id="sellResult" style="display:none;"></div>
+    </section>
+
+    <!-- 买书 -->
+    <section id="buy" class="screen">
+      <div class="section-title">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h2l2.2 11.5a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.2L21 7H6"/><circle cx="9.5" cy="20" r="1.3"/><circle cx="18" cy="20" r="1.3"/></svg>
+        在库二手书
+      </div>
+      <div class="ksearch">
+        <input id="kq" placeholder="搜书名 / 作者 / ISBN" oninput="onKq()" onkeydown="if(event.key==='Enter')openBuy()" />
+        <button class="btn btn-primary" style="width:auto;padding:12px 22px" onclick="openBuy()">搜索</button>
+      </div>
+      <div id="kchips" class="kchips"></div>
+      <div id="buyLoading" class="center" style="display:none;"><div class="spinner"></div><p style="color:var(--ink-soft)">加载库存中…</p></div>
+      <div id="grid" class="grid"></div>
+      <div id="buyEmpty" class="empty" style="display:none;">
+        <svg class="ic-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7.5 12 4l8 3.5v9L12 20l-8-3.5z"/><path d="M4 7.5 12 11l8-3.5M12 11v9"/></svg>
+        <div>当前暂无在库书籍，先去卖几本吧</div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="modal" id="buyModal"><div class="box" id="buyModalBody"></div></div>
+
+<script>
+const API = "";
+const MACHINE_ID = "KIOSK-01";
+document.getElementById("machineLabel").textContent = MACHINE_ID;
+
+let pickedFile = null, lastRecordId = null;
+
+const ICON = {
+  book:  '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 5.5V20.5"/></svg>',
+  check: '<svg class="ic-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg>',
+  alert: '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2 20h20z"/><path d="M12 9v5M12 17h.01"/></svg>',
+  search:'<svg class="ic-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>',
+};
+
+const CONDITION = {
+  like_new:   { label: "近全新", color: "#3a5d37" },
+  good:       { label: "良好",   color: "#5a7a4e" },
+  acceptable: { label: "可接受", color: "#b06a3b" },
+  damaged:    { label: "破损",   color: "#9a4b2e" },
+  reject:     { label: "建议拒收", color: "#7d8471" },
+};
+const cond = (k) => CONDITION[k] || { label: k || "未知", color: "#7d8471" };
+const yuan = (n) => "¥" + Number(n || 0).toFixed(2);
+
+function go(id) {
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+  window.scrollTo(0, 0);
+}
+
+/* ---------- 卖书 ---------- */
+function onPick(e) {
+  const f = e.target.files[0]; if (!f) return;
+  pickedFile = f;
+  document.getElementById("preview").src = URL.createObjectURL(f);
+  document.getElementById("previewWrap").style.display = "block";
+}
+function resetSell() {
+  pickedFile = null;
+  document.getElementById("fileInput").value = "";
+  document.getElementById("previewWrap").style.display = "none";
+  document.getElementById("sellUpload").style.display = "block";
+  document.getElementById("sellResult").style.display = "none";
+}
+async function appraise() {
+  if (!pickedFile) return;
+  document.getElementById("sellUpload").style.display = "none";
+  document.getElementById("sellResult").style.display = "none";
+  document.getElementById("sellLoading").style.display = "block";
+  try {
+    const fd = new FormData(); fd.append("file", pickedFile);
+    const r = await fetch(API + "/appraise", { method: "POST", body: fd });
+    if (!r.ok) throw new Error((await r.json().catch(()=>({}))).detail || ("HTTP " + r.status));
+    renderResult(await r.json());
+  } catch (err) {
+    document.getElementById("sellResult").innerHTML =
+      `<div class="center"><div style="color:var(--clay)">${ICON.alert}</div><p>识别失败：${err.message}</p>
+       <button class="btn btn-ghost" onclick="resetSell()">重试</button></div>`;
+    document.getElementById("sellResult").style.display = "block";
+  } finally {
+    document.getElementById("sellLoading").style.display = "none";
+  }
+}
+function renderResult(data) {
+  const rec = data.recognize || {}, c = data.condition || {}, p = data.price;
+  lastRecordId = data.record_id;
+  const cl = cond(c.condition_level);
+
+  if (!rec.matched) {
+    document.getElementById("sellResult").innerHTML = `
+      <div class="center"><div>${ICON.search}</div>
+      <h2>未匹配到书目</h2>
+      <p style="color:var(--ink-soft)">可能是库里还没有该书或封面不清晰，已转人工复核</p>
+      <div class="btn-row" style="margin-top:18px;">
+        <button class="btn btn-ghost" onclick="resetSell()">重拍</button>
+        <button class="btn btn-primary" onclick="go('home')">返回首页</button>
+      </div></div>`;
+    document.getElementById("sellResult").style.display = "block"; return;
+  }
+
+  const b = rec.book || {};
+  const dims = (c.dimensions || []).map(d => {
+    const pct = Math.round((d.score||0)*100);
+    return `<div class="dim"><div class="top"><span>${d.name}</span><span>${pct}%</span></div>
+      <div class="bar"><i class="${pct>=55?'warn':''}" style="width:${pct}%"></i></div>
+      ${d.evidence ? `<small style="color:var(--sage)">${d.evidence}</small>` : ""}</div>`;
+  }).join("");
+
+  const reviewBanner = data.review_task_id
+    ? `<div class="review-banner">${ICON.alert}<span>本次评估置信度较低，已转人工复核，最终价格以复核为准。</span></div>` : "";
+
+  const priceBox = p ? `
+    <div class="kprice">
+      <div class="kp-top"><span>回收价 · 给你</span><span class="kp-ai">AI 估价 ${yuan(p.recycle_price)}</span></div>
+      <div class="kp-step">
+        <button onclick="stepPrice(-1)">−</button>
+        <span class="kp-unit">¥</span><input id="kioskPrice" type="number" step="0.01" value="${Number(p.recycle_price).toFixed(2)}"/>
+        <button onclick="stepPrice(1)">＋</button>
+      </div>
+      <div class="kp-sub">预计上架售价 ${yuan(p.sale_price)} · 可手动调整，高于 AI 估价将转人工复核</div>
+    </div>
+    ${p.reason ? `<div class="reason">${p.reason}</div>` : ""}`
+    : `<div class="review-banner">${ICON.alert}<span>${(data.admission && !data.admission.accepted) ? data.admission.reason : "该书被判定为「" + cl.label + "」，暂不回收。"}</span></div>`;
+
+  const actions = (p && !c.rejected) ? `
+    <input id="kioskPhone" type="tel" inputmode="numeric" placeholder="手机号 · 回收款到账此账户（扫码登录后可同步到小程序）"
+      style="width:100%;margin-top:16px;border:1px solid var(--line);border-radius:10px;padding:14px 16px;font-size:15px"/>
+    <div class="btn-row" style="margin-top:12px;">
+      <button class="btn btn-ghost" onclick="resetSell()">重拍</button>
+      <button class="btn btn-primary" onclick="confirmRecycle()">确认回收</button>
+    </div>`
+    : `<button class="btn btn-ghost" style="margin-top:16px" onclick="resetSell()">换一本</button>`;
+
+  document.getElementById("sellResult").innerHTML = `
+    ${reviewBanner}
+    <div class="book-head">
+      ${ICON.book}
+      <div class="meta" style="flex:1">
+        <b>${b.title || "未知书名"}</b>
+        <div>${b.author || ""}${b.publisher ? " · " + b.publisher : ""}</div>
+        <div>识别方式 ${rec.method} · 置信度 ${Math.round((rec.confidence||0)*100)}%</div>
+      </div>
+      <span class="badge" style="background:${cl.color}">${cl.label}</span>
+    </div>
+    ${priceBox}
+    ${c.summary ? `<div class="reason">品相说明：${c.summary}</div>` : ""}
+    <div class="dims">${dims}</div>
+    ${actions}`;
+  document.getElementById("sellResult").style.display = "block";
+}
+function stepPrice(d) {
+  const el = document.getElementById("kioskPrice");
+  if (!el) return;
+  el.value = Math.max(0, (parseFloat(el.value) || 0) + d).toFixed(2);
+}
+async function confirmRecycle() {
+  if (!lastRecordId) return;
+  const el = document.getElementById("kioskPrice");
+  const sp = el ? parseFloat(el.value) : NaN;
+  const phoneEl = document.getElementById("kioskPhone");
+  const phone = phoneEl ? phoneEl.value.trim() : "";
+  try {
+    const r = await fetch(API + "/inventory/intake", {
+      method: "POST", headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ record_id: lastRecordId, machine_id: MACHINE_ID, seller_phone: phone, seller_price: isNaN(sp) ? null : sp })
+    });
+    if (!r.ok) throw new Error((await r.json().catch(()=>({}))).detail || ("HTTP " + r.status));
+    document.getElementById("sellResult").innerHTML = `
+      <div class="center"><div style="color:var(--forest)">${ICON.check}</div>
+      <h2>回收成功</h2>
+      <p style="color:var(--ink-soft)">${phone ? "回收款已转入手机号 " + phone + " 的账户。" : "未填手机号，本次回收款暂未入账。"}请将书放入投书口。</p>
+      <p style="color:var(--sage);font-size:13px">感谢你为绿色校园出一份力</p>
+      <button class="btn btn-primary" style="margin-top:14px" onclick="resetSell(); go('home')">完成</button></div>`;
+  } catch (err) { alert("入库失败：" + err.message); }
+}
+
+/* ---------- 买书 ---------- */
+let kQuery = "", kCategory = "";
+function coverUrlOf(it) {
+  return it.cover_url || (it.isbn ? `https://covers.openlibrary.org/b/isbn/${it.isbn}-L.jpg?default=false` : "");
+}
+function coverCell(it, cls) {
+  const url = coverUrlOf(it);
+  return `<div class="${cls}">
+    ${url ? `<img class="cv-img" src="${url}" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'"/>` : ""}
+    <div class="cv-fb" style="${url ? 'display:none' : 'display:grid'}">${ICON.book}</div>
+  </div>`;
+}
+function onKq() { kQuery = document.getElementById("kq").value; }
+async function loadKchips() {
+  try {
+    const cats = await (await fetch(API + "/inventory/categories?machine_id=" + encodeURIComponent(MACHINE_ID))).json();
+    const all = `<span class="kchip ${kCategory===''?'on':''}" onclick="pickCat('')">全部</span>`;
+    document.getElementById("kchips").innerHTML = all + (cats||[]).map(c =>
+      `<span class="kchip ${kCategory===c?'on':''}" onclick="pickCat('${c}')">${c}</span>`).join("");
+  } catch (e) {}
+}
+function pickCat(c) { kCategory = (kCategory === c ? "" : c); openBuy(); }
+async function openBuy() {
+  go('buy');
+  loadKchips();
+  document.getElementById("grid").innerHTML = "";
+  document.getElementById("buyEmpty").style.display = "none";
+  document.getElementById("buyLoading").style.display = "block";
+  try {
+    let url = "/inventory?status=in_stock&machine_id=" + encodeURIComponent(MACHINE_ID);
+    if (kQuery) url += "&q=" + encodeURIComponent(kQuery);
+    if (kCategory) url += "&category=" + encodeURIComponent(kCategory);
+    renderGrid(await (await fetch(API + url)).json());
+  } catch (err) {
+    document.getElementById("grid").innerHTML = `<div class="err">加载失败：${err.message}</div>`;
+  } finally { document.getElementById("buyLoading").style.display = "none"; }
+}
+function renderGrid(items) {
+  if (!items || !items.length) {
+    document.getElementById("buyEmpty").style.display = "block";
+    document.getElementById("buyEmpty").querySelector("div").textContent =
+      (kQuery || kCategory) ? "没有匹配的书，换个关键词或分类" : "当前暂无在库书籍，先去卖几本吧";
+    return;
+  }
+  document.getElementById("buyEmpty").style.display = "none";
+  document.getElementById("grid").innerHTML = items.map(it => {
+    const cl = cond(it.condition_level);
+    return `<div class="pcard" onclick='openBuyModal(${JSON.stringify(it).replace(/'/g,"&#39;")})'>
+      ${coverCell(it, "cover")}
+      <b>${it.title || "二手书"}</b>
+      <div class="sub">${it.category || it.isbn || ""}</div>
+      <div class="row"><span class="badge" style="background:${cl.color};font-size:12px;padding:3px 10px">${cl.label}</span>
+      <span class="pp">${yuan(it.sale_price)}</span></div>
+    </div>`;
+  }).join("");
+}
+function openBuyModal(it) {
+  const cl = cond(it.condition_level);
+  document.getElementById("buyModalBody").innerHTML = `
+    ${coverCell(it, "cover-lg")}
+    <h2 style="margin:10px 0">${it.title || "二手书"}</h2>
+    <span class="badge" style="background:${cl.color}">${cl.label}</span>
+    <div class="price-main" style="margin:18px 0;text-align:center"><div class="num">${yuan(it.sale_price)}</div><div class="lbl">售价</div></div>
+    <button class="btn btn-primary" onclick='pay(${JSON.stringify(it).replace(/'/g,"&#39;")})'>微信支付 ${yuan(it.sale_price)}</button>
+    <button class="btn btn-ghost" style="margin-top:10px" onclick="closeModal()">取消</button>
+    <div style="color:var(--sage);font-size:12px;margin-top:12px">微信支付为占位，Phase 1 接入真实支付</div>`;
+  document.getElementById("buyModal").classList.add("active");
+}
+function closeModal(){ document.getElementById("buyModal").classList.remove("active"); }
+async function pay(it) {
+  document.getElementById("buyModalBody").innerHTML = `<div class="spinner"></div><p style="color:var(--ink-soft)">正在下单并支付…</p>`;
+  try {
+    // 1) 下单（锁库存）
+    const c = await fetch(API + "/orders", {
+      method: "POST", headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ inventory_id: it.id, machine_id: MACHINE_ID, buyer_openid: "" })
+    });
+    if (!c.ok) throw new Error((await c.json().catch(()=>({}))).detail || ("HTTP " + c.status));
+    const order = await c.json();
+    // 2) 支付（开发期为模拟支付，成功后自动出货完成）
+    const p = await fetch(API + "/orders/pay", {
+      method: "POST", headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ order_id: order.id })
+    });
+    if (!p.ok) throw new Error((await p.json().catch(()=>({}))).detail || ("HTTP " + p.status));
+    const res = await p.json();
+    const orderNo = (res.order && res.order.order_no) || "";
+    document.getElementById("buyModalBody").innerHTML = `
+      <div style="color:var(--forest)">${ICON.check}</div>
+      <h2>购买成功</h2>
+      <p style="color:var(--ink-soft)">请到取书口领取你的书</p>
+      <p style="color:var(--sage);font-size:13px">订单号 ${orderNo}</p>
+      <button class="btn btn-primary" style="margin-top:14px" onclick="closeModal(); openBuy()">继续逛逛</button>`;
+  } catch (err) {
+    document.getElementById("buyModalBody").innerHTML =
+      `<div style="color:var(--clay)">${ICON.alert}</div><p>支付失败：${err.message}</p>
+       <button class="btn btn-ghost" onclick="closeModal()">关闭</button>`;
+  }
+}
+</script>
+</body>
+</html>
